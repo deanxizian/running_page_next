@@ -1,5 +1,7 @@
 .page {
+  width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
   background: #000;
   color: #fff;
   font-family: var(--font-sans);
@@ -11,7 +13,7 @@
   right: 0;
   left: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.32);
   -webkit-backdrop-filter: blur(64px) saturate(1.9) contrast(1.12);
   backdrop-filter: blur(64px) saturate(1.9) contrast(1.12);
@@ -23,21 +25,24 @@
 
 .navInner {
   max-width: 1280px;
-  height: 64px;
+  height: clamp(58px, 6vw, 64px);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 clamp(12px, 3vw, 24px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: clamp(10px, 2.2vw, 28px);
 }
 
 .brand {
-  font-size: 24px;
+  flex: 0 0 auto;
+  font-size: clamp(18px, 2.4vw, 24px);
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
   color: #fff;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .brand span:last-child {
@@ -45,26 +50,39 @@
 }
 
 .navLinks {
+  --nav-gap: clamp(5px, 1vw, 8px);
+  --nav-x-pad: clamp(5px, 1vw, 8px);
+  --nav-y-pad: clamp(4px, 0.7vw, 5px);
+  position: relative;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: clamp(176px, 34vw, 280px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  padding: 5px 8px;
+  padding: var(--nav-y-pad) var(--nav-x-pad);
   background: rgba(255, 255, 255, 0.045);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   backdrop-filter: blur(20px) saturate(1.4);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--nav-gap);
+  font-size: clamp(12px, 1.3vw, 14px);
   font-weight: 800;
+  overflow: hidden;
 }
 
 .navLinks a {
   position: relative;
+  z-index: 1;
+  min-width: 0;
   border-radius: 999px;
-  padding: 7px 13px;
+  padding: 7px clamp(2px, 1.1vw, 13px);
   color: #d4d4d8;
   text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
   transition:
     color 0.2s ease,
     text-shadow 0.2s ease;
@@ -77,19 +95,32 @@
 .navLinks .navLinkActive,
 .navLinks .navLinkActive:hover {
   color: #e31937;
-  background: rgba(227, 25, 55, 0.12);
   text-shadow: 0 0 14px rgba(227, 25, 55, 0.38);
 }
 
-.main {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 96px 24px 38px;
+.navIndicator {
+  position: absolute;
+  top: var(--nav-y-pad);
+  bottom: var(--nav-y-pad);
+  left: var(--nav-x-pad);
+  width: calc((100% - var(--nav-x-pad) - var(--nav-x-pad) - var(--nav-gap) - var(--nav-gap)) / 3);
+  border-radius: 999px;
+  background: rgba(227, 25, 55, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 25, 55, 0.1),
+    0 0 18px -10px rgba(227, 25, 55, 0.88);
+  transform: translate3d(var(--nav-indicator-offset, 0), 0, 0);
+  transition: transform var(--nav-indicator-duration, 0.34s)
+    cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
-.mobileHome,
-.mobileBottomNav {
-  display: none;
+.main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(86px, 8vw, 96px) clamp(16px, 3vw, 24px) 38px;
 }
 
 .dashboardGrid {
@@ -274,12 +305,6 @@
   cursor: pointer;
 }
 
-.metricCardInteractive:hover {
-  border-color: rgba(227, 25, 55, 0.75);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px -18px rgba(227, 25, 55, 0.8);
-}
-
 .cardOverlay {
   position: absolute;
   inset: 0;
@@ -310,14 +335,6 @@
   background: #e31937;
 }
 
-.metricCardInteractive:hover .cardOverlay {
-  opacity: 1;
-}
-
-.eventPanel:hover .cardOverlay {
-  opacity: 1;
-}
-
 .metricLabel {
   color: #a1a1aa;
   font-family: var(--font-mono);
@@ -328,8 +345,41 @@
   transition: color 0.2s ease;
 }
 
-.metricCardInteractive:hover .metricLabel {
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .metricCardInteractive:hover {
+    border-color: rgba(227, 25, 55, 0.75);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -18px rgba(227, 25, 55, 0.8);
+  }
+
+  .metricCardInteractive:hover .cardOverlay {
+    opacity: 1;
+  }
+
+  .eventPanel:hover {
+    border-color: rgba(227, 25, 55, 0.75);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -18px rgba(227, 25, 55, 0.8);
+  }
+
+  .eventPanel:hover .cardOverlay {
+    opacity: 1;
+  }
+
+  .calendarGrid button:not(:disabled):hover {
+    background: rgba(39, 39, 42, 0.42);
+    cursor: pointer;
+  }
+
+  .calendarGrid button:not(:disabled):hover .calendarHoverMeta {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition-delay: 0.08s;
+  }
+
+  .metricCardInteractive:hover .metricLabel {
+    color: #fff;
+  }
 }
 
 .metricValue {
@@ -651,12 +701,6 @@
     box-shadow 0.2s ease;
 }
 
-.eventPanel:hover {
-  border-color: rgba(227, 25, 55, 0.75);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px -18px rgba(227, 25, 55, 0.8);
-}
-
 .eventCount {
   position: relative;
   z-index: 1;
@@ -732,7 +776,7 @@
 
 .mapPanel {
   position: relative;
-  height: 300px;
+  height: clamp(220px, 32vw, 300px);
   overflow: hidden;
   background: #202124;
 }
@@ -828,11 +872,6 @@
     box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.calendarGrid button:not(:disabled):hover {
-  background: rgba(39, 39, 42, 0.42);
-  cursor: pointer;
-}
-
 .calendarGrid .calendarSelected {
   background: rgba(39, 39, 42, 0.58);
   box-shadow:
@@ -878,8 +917,7 @@
   line-height: 1;
 }
 
-.calendarGrid button:not(:disabled):hover .calendarHoverMeta,
-.calendarGrid button:not(:disabled):focus-visible .calendarHoverMeta {
+.calendarGrid .calendarPreviewed .calendarHoverMeta {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: 0.08s;
@@ -1133,13 +1171,14 @@
 
 .heatmapYearHeader {
   margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
   gap: 18px;
 }
 
 .heatmapYearHeader strong {
+  justify-self: start;
   color: #fff;
   font-family: var(--font-mono);
   font-size: 28px;
@@ -1148,9 +1187,33 @@
 }
 
 .heatmapYearHeader .heatStats {
+  min-width: 0;
+  justify-self: end;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  flex-wrap: wrap;
+  text-align: right;
+}
+
+.heatStatsPrimary,
+.heatStatsSecondary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.heatStatsPrimary {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+
+.heatStatsSecondary {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 
 .heatmapYearHeader .heatStats span {
@@ -1533,17 +1596,46 @@
 
 @media (max-width: 1120px) {
   .dashboardGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .rightColumn {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
   }
 
+  .leftColumn,
+  .rightColumn {
+    display: contents;
+  }
+
+  .metricsGrid {
+    order: 1;
+  }
+
+  .rightColumn > .eventPanel {
+    order: 2;
+  }
+
+  .rightColumn > .mapPanel {
+    order: 3;
+  }
+
+  .rightColumn > .calendarPanel {
+    order: 4;
+  }
+
+  .rightColumn > .chartPanel {
+    order: 5;
+    width: 100%;
+    align-self: start;
+  }
+
+  .leftColumn > .panel {
+    order: 6;
+  }
+
+  .metricsGrid,
+  .leftColumn > .panel,
   .eventPanel,
   .mapPanel {
-    grid-column: span 2;
+    grid-column: 1 / -1;
   }
 
   .eventCards {
@@ -1553,289 +1645,137 @@
 
 @media (max-width: 760px) {
   .page {
-    padding-bottom: 84px;
-  }
-
-  .nav {
-    display: none;
-  }
-
-  .mobileBottomNav {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 90;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    gap: 6px;
-    border: 0;
-    border-radius: 999px;
-    width: min(calc(100% - 24px), 420px);
-    margin: 0 auto 10px;
-    padding: 6px 8px;
-    background: rgba(9, 9, 11, 0.44);
-    -webkit-backdrop-filter: blur(64px) saturate(1.9) contrast(1.12);
-    backdrop-filter: blur(64px) saturate(1.9) contrast(1.12);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.14),
-      0 18px 54px -28px rgba(0, 0, 0, 0.98);
-  }
-
-  .mobileNavLink {
-    flex: 1 1 0;
-    min-width: 58px;
-    border: 0;
-    border-radius: 999px;
-    padding: 7px 10px;
-    background: transparent;
-    color: #71717a;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    font-weight: 700;
-    white-space: nowrap;
-    transition:
-      background-color 0.2s ease,
-      border-color 0.2s ease,
-      color 0.2s ease,
-      text-shadow 0.2s ease;
-  }
-
-  .mobileNavLink svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .mobileNavLinkActive {
-    background: rgba(227, 25, 55, 0.12);
-    color: #e31937;
-    text-shadow: 0 0 12px rgba(227, 25, 55, 0.34);
-  }
-
-  .navInner {
-    height: auto;
-    padding: 18px 18px 14px;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .navLinks {
-    width: 100%;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    font-size: 12px;
-    scrollbar-width: none;
-  }
-
-  .navLinks::-webkit-scrollbar {
-    display: none;
+    padding-bottom: 0;
   }
 
   .main {
-    width: 100%;
     max-width: none;
-    padding: 24px 16px 30px;
+    padding-bottom: 30px;
   }
 
   .dashboardGrid {
-    display: none;
-  }
-
-  .mobileHome {
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 24px;
   }
 
-  .mobileGoalGrid {
+  .metricsGrid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
 
-  .mobileGoalCard {
-    min-width: 0;
-    border: 1px solid #27272a;
+  .metricsGrid .metricCard {
+    min-height: 150px;
     border-radius: 12px;
-    padding: 18px 16px;
-    background: #18181b;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 16px;
+    grid-template-rows: auto 34px 15px minmax(34px, auto) 18px;
+    gap: 7px;
   }
 
-  .mobileGoalCardWide {
-    grid-column: 1 / -1;
+  .metricsGrid .metricCard .metricValue {
+    font-size: clamp(16px, 4.7vw, 22px);
   }
 
-  .mobileGoalCardButton {
-    cursor: pointer;
-    transition:
-      border-color 0.2s ease,
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+  .metricsGrid .metricCard .metricValue span {
+    font-size: clamp(9px, 2.8vw, 11px);
   }
 
-  .mobileGoalCardButton:active {
-    transform: scale(0.985);
-  }
-
-  .mobileGoalValue {
-    color: #fff;
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 900;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .mobileGoalValue span {
-    margin-left: 3px;
-    color: #71717a;
+  .metricsGrid .metricCard .metricDetails {
+    justify-content: flex-start;
+    gap: 6px 10px;
     font-size: 12px;
-    font-weight: 500;
   }
 
-  .mobileMapPanel {
-    position: sticky;
-    top: 0;
-    z-index: 35;
-    overflow: hidden;
-    border: 1px solid #27272a;
+  .metricsGrid .metricCard .metricTrend {
+    font-size: 10px;
+  }
+
+  .mapPanel {
     border-radius: 12px;
-    background: #202124;
     box-shadow: 0 12px 28px -22px rgba(0, 0, 0, 0.9);
   }
 
-  .mobileMapPanel :global(.mapboxgl-map) {
+  .mapPanel :global(.mapboxgl-map) {
     border-radius: 12px;
   }
 
-  .mobileCalendarPanel {
+  .calendarPanel {
     border-radius: 14px;
     padding: 24px;
   }
 
-  .mobileCalendarPanel .calendarHeader {
+  .calendarPanel .calendarHeader {
     gap: 12px;
   }
 
-  .mobileCalendarPanel .calendarHeader strong {
+  .calendarPanel .calendarHeader strong {
     font-size: 22px;
   }
 
-  .mobileCalendarPanel .calendarHeader span {
+  .calendarPanel .calendarHeader span {
     margin-left: 10px;
     font-size: 14px;
   }
 
-  .mobileCalendarPanel .weekdays {
+  .calendarPanel .weekdays {
     margin-top: 24px;
   }
 
-  .mobileCalendarPanel .calendarGrid {
+  .calendarPanel .calendarGrid {
     gap: 4px;
   }
 
-  .mobileCalendarPanel .calendarGrid button {
+  .calendarPanel .calendarGrid button {
     min-height: 44px;
   }
 
-  .mobileCalendarPanel .routeSpark {
+  .calendarPanel .routeSpark {
     height: 28px;
   }
 
-  .mobileCalendarPanel .calendarGrid small {
+  .calendarPanel .calendarGrid small {
     font-size: 11px;
   }
 
-  .mobileHome .eventPanel {
+  .eventPanel {
     border-radius: 14px;
   }
 
-  .mobileHome .chartPanel {
+  .chartPanel {
     border-radius: 14px;
     padding: 22px 18px;
   }
 
-  .mobileHome .chartHeader {
+  .chartHeader {
     align-items: center;
     gap: 12px;
   }
 
-  .mobileHome .chartHeader strong {
+  .chartHeader strong {
     font-size: 20px;
   }
 
-  .mobileHome .chartHeader span {
+  .chartHeader span {
     font-size: 20px;
   }
 
-  .mobileHome .barChart {
+  .barChart {
     height: 150px;
     margin-top: 22px;
   }
 
-  .mobileHome .barFill {
+  .barFill {
     width: 16px;
   }
 
-  .mobileLogPanel {
-    border-radius: 14px;
-  }
-
-  .mobileLogHeader {
-    width: 100%;
-    border: 0;
-    padding: 24px 26px;
-    background: transparent;
-    color: inherit;
-    cursor: default;
-    font: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    text-align: left;
-  }
-
-  .mobileLogHeader span {
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 20px;
-    font-weight: 900;
-  }
-
-  .mobileLogHeader small {
-    color: #71717a;
-    font-size: 13px;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .mobileTableWrap {
+  .tableWrap {
     overflow-x: auto;
   }
 
-  .mobileTableWrap .activityTable {
+  .activityTable {
     min-width: 720px;
   }
 
-  .metricsGrid,
-  .rightColumn,
   .eventCards {
     grid-template-columns: 1fr;
   }
@@ -1895,10 +1835,6 @@
     flex-direction: column;
   }
 
-  .heatStats {
-    flex-wrap: wrap;
-  }
-
   .eventsHero h1 {
     font-size: 48px;
   }
@@ -1909,5 +1845,59 @@
 
   .footer {
     display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .heatmapYearHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 14px;
+  }
+
+  .heatmapYearHeader .heatStats {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .heatStatsPrimary,
+  .heatStatsSecondary {
+    display: grid;
+    justify-content: end;
+    gap: 6px;
+  }
+
+  .heatStatsPrimary {
+    grid-template-columns: repeat(3, max-content);
+  }
+
+  .heatStatsSecondary {
+    grid-template-columns: repeat(2, max-content);
+  }
+
+  .heatmapYearHeader .heatStats span {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heatmapYearHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .heatmapYearHeader .heatStats {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricsGrid .metricCard:first-child {
+    grid-column: 1 / -1;
   }
 }

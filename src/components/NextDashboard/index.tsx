@@ -1,14 +1,23 @@
 import {
   ReactNode,
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import {
+  Link,
+  Navigate,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import RunMap from '@/components/RunMap';
 import useActivities from '@/hooks/useActivities';
+import NotFoundPage from '@/pages/404';
 import { WebMercatorViewport } from '@math.gl/web-mercator';
 import type { FeatureCollection } from '@/types/geojson';
 import {
@@ -30,6 +39,7 @@ import { RPGeometry } from '@/static/run_countries';
 import styles from './style.module.css';
 
 type DashboardView = 'home' | 'heatmap' | 'events';
+type DashboardRouteView = DashboardView | 'redirect-events' | 'not-found';
 
 interface NextDashboardProps {
   view?: DashboardView;
@@ -46,11 +56,11 @@ interface SummaryStats {
 }
 
 const ROWS_PER_PAGE = 16;
-const MOBILE_ROWS_PER_PAGE = 8;
 const YEAR_GOAL = 3000;
 const MONTH_GOAL = 300;
 const ROW_FADE_BASE_DELAY_MS = 120;
 const ROW_FADE_STAGGER_MS = 36;
+const MAP_PANEL_HEIGHT = 'clamp(220px, 32vw, 300px)';
 const MAP_FIT_MARGIN_RATIO = 0.14;
 const MAP_FIT_MIN_MARGIN = 0.0025;
 const MAP_FIT_PADDING = 155;
@@ -66,11 +76,39 @@ const NAV_LINKS = [
   { to: '/events', label: '赛事记录' },
 ];
 
-const MOBILE_NAV_LINKS = [
-  { to: '/', label: '首页', icon: 'list' },
-  { to: '/heatmap', label: '热力图', icon: 'flame' },
-  { to: '/events', label: '赛事记录', icon: 'trophy' },
-] as const;
+const NAV_INDICATOR_STEP_DURATION_MS = 340;
+
+const navIndexForPath = (pathname: string) => {
+  if (pathname.startsWith('/events') || pathname.startsWith('/mls')) {
+    return 2;
+  }
+
+  if (pathname.startsWith('/heatmap')) {
+    return 1;
+  }
+
+  return 0;
+};
+
+const dashboardViewForPath = (pathname: string): DashboardRouteView => {
+  if (pathname === '/') {
+    return 'home';
+  }
+
+  if (pathname.startsWith('/heatmap')) {
+    return 'heatmap';
+  }
+
+  if (pathname.startsWith('/events')) {
+    return 'events';
+  }
+
+  if (pathname.startsWith('/mls')) {
+    return 'redirect-events';
+  }
+
+  return 'not-found';
+};
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -449,6 +487,7 @@ const MetricCard = ({
   trend,
   onClick,
   overlay,
+  className,
 }: {
   label: string;
   value: string;
@@ -463,66 +502,73 @@ const MetricCard = ({
   };
   onClick?: () => void;
   overlay?: string;
-}) => (
-  <button
-    type="button"
-    className={`${styles.metricCard} ${onClick ? styles.metricCardInteractive : ''}`}
-    onClick={onClick}
-  >
-    <span className={styles.metricLabel}>{label}</span>
-    <span className={styles.metricValue}>
-      {value}
-      <span>{unit}</span>
-    </span>
-    <span
-      className={`${styles.metricProgressSlot} ${
-        typeof progress === 'number' ? '' : styles.metricSlotEmpty
-      }`}
-    >
-      {typeof progress === 'number' && (
-        <span className={styles.progressTrack}>
-          <span
-            className={styles.progressBar}
-            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          />
-        </span>
-      )}
-    </span>
-    <span
-      className={`${styles.metricDetails} ${
-        stackDetails ? styles.metricDetailsStacked : ''
-      }`}
-    >
-      {details.map((detail, index) => (
-        <span key={`${detail}-${index}`} className={styles.metricDetailItem}>
-          {detailIcons?.[index] && (
-            <span className={styles.metricDetailIcon}>
-              <MetricIcon icon={detailIcons[index]} />
-            </span>
-          )}
-          {detail}
-        </span>
-      ))}
-    </span>
-    <span className={styles.metricTrendSlot}>
-      {trend ? (
-        <span
-          className={`${styles.metricTrend} ${
-            trend.positive ? styles.trendPositive : styles.trendMuted
-          }`}
-        >
-          <span className={styles.metricDetailIcon}>
-            <MetricIcon icon={trend.positive ? 'trendUp' : 'trendDown'} />
+  className?: string;
+}) => {
+  const cardClassName = [
+    styles.metricCard,
+    onClick ? styles.metricCardInteractive : '',
+    className ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <button type="button" className={cardClassName} onClick={onClick}>
+      <span className={styles.metricLabel}>{label}</span>
+      <span className={styles.metricValue}>
+        {value}
+        <span>{unit}</span>
+      </span>
+      <span
+        className={`${styles.metricProgressSlot} ${
+          typeof progress === 'number' ? '' : styles.metricSlotEmpty
+        }`}
+      >
+        {typeof progress === 'number' && (
+          <span className={styles.progressTrack}>
+            <span
+              className={styles.progressBar}
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            />
           </span>
-          {trend.text}
-        </span>
-      ) : (
-        <span className={styles.metricTrendPlaceholder} aria-hidden="true" />
-      )}
-    </span>
-    {overlay && <span className={styles.cardOverlay}>{overlay}</span>}
-  </button>
-);
+        )}
+      </span>
+      <span
+        className={`${styles.metricDetails} ${
+          stackDetails ? styles.metricDetailsStacked : ''
+        }`}
+      >
+        {details.map((detail, index) => (
+          <span key={`${detail}-${index}`} className={styles.metricDetailItem}>
+            {detailIcons?.[index] && (
+              <span className={styles.metricDetailIcon}>
+                <MetricIcon icon={detailIcons[index]} />
+              </span>
+            )}
+            {detail}
+          </span>
+        ))}
+      </span>
+      <span className={styles.metricTrendSlot}>
+        {trend ? (
+          <span
+            className={`${styles.metricTrend} ${
+              trend.positive ? styles.trendPositive : styles.trendMuted
+            }`}
+          >
+            <span className={styles.metricDetailIcon}>
+              <MetricIcon icon={trend.positive ? 'trendUp' : 'trendDown'} />
+            </span>
+            {trend.text}
+          </span>
+        ) : (
+          <span className={styles.metricTrendPlaceholder} aria-hidden="true" />
+        )}
+      </span>
+      {overlay && <span className={styles.cardOverlay}>{overlay}</span>}
+    </button>
+  );
+};
 
 type MetricIconName =
   | 'bolt'
@@ -628,72 +674,6 @@ const EventRouteBackground = ({ run }: { run: Activity }) => {
   );
 };
 
-const NavIcon = ({
-  icon,
-}: {
-  icon: (typeof MOBILE_NAV_LINKS)[number]['icon'];
-}) => {
-  const commonProps = {
-    width: 21,
-    height: 21,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  };
-
-  switch (icon) {
-    case 'map':
-      return (
-        <svg {...commonProps}>
-          <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" />
-          <path d="M9 3v15" />
-          <path d="M15 6v15" />
-        </svg>
-      );
-    case 'grid':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 3h7v7H3z" />
-          <path d="M14 3h7v7h-7z" />
-          <path d="M3 14h7v7H3z" />
-          <path d="M14 14h7v7h-7z" />
-        </svg>
-      );
-    case 'flame':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 22c4 0 7-3 7-7 0-3-2-5-4-7 .2 2-1 3.5-2.4 4.4C12.8 9.4 10.5 6.8 8 5c.4 3-3 5.4-3 9 0 4.4 3 8 7 8Z" />
-        </svg>
-      );
-    case 'trophy':
-      return (
-        <svg {...commonProps}>
-          <path d="M8 21h8" />
-          <path d="M12 17v4" />
-          <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
-          <path d="M5 6H3a4 4 0 0 0 4 4" />
-          <path d="M19 6h2a4 4 0 0 1-4 4" />
-        </svg>
-      );
-    case 'list':
-    default:
-      return (
-        <svg {...commonProps}>
-          <path d="M8 6h13" />
-          <path d="M8 12h13" />
-          <path d="M8 18h13" />
-          <path d="M3 6h.01" />
-          <path d="M3 12h.01" />
-          <path d="M3 18h.01" />
-        </svg>
-      );
-  }
-};
-
 const EventPbMedalIcon = () => (
   <svg
     className={styles.eventPbMedal}
@@ -707,23 +687,19 @@ const EventPbMedalIcon = () => (
   </svg>
 );
 
-const MobileBottomNav = () => (
-  <nav className={styles.mobileBottomNav} aria-label="Mobile navigation">
-    {MOBILE_NAV_LINKS.map((link) => (
-      <NavLink
-        key={link.to}
-        to={link.to}
-        end={link.to === '/'}
-        className={({ isActive }) =>
-          `${styles.mobileNavLink} ${isActive ? styles.mobileNavLinkActive : ''}`
-        }
-      >
-        <NavIcon icon={link.icon} />
-        <span>{link.label}</span>
-      </NavLink>
-    ))}
-  </nav>
-);
+const navIndicatorStyle = (activeNavIndex: number, travelSteps: number) =>
+  ({
+    '--nav-indicator-offset':
+      activeNavIndex === 0
+        ? '0px'
+        : activeNavIndex === 1
+          ? 'calc(100% + var(--nav-gap))'
+          : 'calc(200% + var(--nav-gap) + var(--nav-gap))',
+    '--nav-indicator-duration':
+      travelSteps === 0
+        ? '0ms'
+        : `${travelSteps * NAV_INDICATOR_STEP_DURATION_MS}ms`,
+  }) as CSSProperties;
 
 const PageShell = ({
   children,
@@ -731,37 +707,54 @@ const PageShell = ({
 }: {
   children: ReactNode;
   thisYear: string;
-}) => (
-  <div className={styles.page}>
-    <nav className={styles.nav}>
-      <div className={styles.navInner}>
-        <Link to="/" className={styles.brand}>
-          <span>Running</span>
-          <span> Page</span>
-        </Link>
-        <div className={styles.navLinks}>
-          {NAV_LINKS.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) =>
-                isActive ? styles.navLinkActive : undefined
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
+}) => {
+  const location = useLocation();
+  const activeNavIndex = navIndexForPath(location.pathname);
+  const previousNavIndexRef = useRef(activeNavIndex);
+  const indicatorTravelSteps = Math.abs(
+    activeNavIndex - previousNavIndexRef.current
+  );
+  const indicatorStyle = navIndicatorStyle(
+    activeNavIndex,
+    indicatorTravelSteps
+  );
+
+  useEffect(() => {
+    previousNavIndexRef.current = activeNavIndex;
+  }, [activeNavIndex]);
+
+  return (
+    <div className={styles.page}>
+      <nav className={styles.nav}>
+        <div className={styles.navInner}>
+          <Link to="/" className={styles.brand}>
+            <span>Running</span>
+            <span> Page</span>
+          </Link>
+          <div className={styles.navLinks} style={indicatorStyle}>
+            <span className={styles.navIndicator} aria-hidden="true" />
+            {NAV_LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === '/'}
+                className={({ isActive }) =>
+                  isActive ? styles.navLinkActive : undefined
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
         </div>
-      </div>
-    </nav>
-    {children}
-    <footer className={styles.footer}>
-      © {thisYear} Running Page. All miles counted.
-    </footer>
-    <MobileBottomNav />
-  </div>
-);
+      </nav>
+      {children}
+      <footer className={styles.footer}>
+        © {thisYear} Running Page. All miles counted.
+      </footer>
+    </div>
+  );
+};
 
 const HomeView = ({
   years,
@@ -778,10 +771,13 @@ const HomeView = ({
   const latestMonth = latestRun ? monthKeyFor(latestRun.start_date_local) : '';
   const [yearFilter, setYearFilter] = useState(thisYear || 'All');
   const [page, setPage] = useState(0);
-  const [mobilePage, setMobilePage] = useState(0);
   const [selectedRun, setSelectedRun] = useState<Activity | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(latestMonth);
   const [hoveredMonthKey, setHoveredMonthKey] = useState<string | null>(null);
+  const [previewedCalendarKey, setPreviewedCalendarKey] = useState<
+    string | null
+  >(null);
+  const calendarPreviewTimeoutRef = useRef<number | null>(null);
   const [calendarSlideDirection, setCalendarSlideDirection] = useState<
     'idle' | 'forward' | 'backward'
   >('idle');
@@ -794,6 +790,59 @@ const HomeView = ({
       setCalendarMonth(latestMonth);
     }
   }, [calendarMonth, latestMonth]);
+
+  const clearCalendarPreview = useCallback(() => {
+    if (calendarPreviewTimeoutRef.current) {
+      window.clearTimeout(calendarPreviewTimeoutRef.current);
+      calendarPreviewTimeoutRef.current = null;
+    }
+
+    setPreviewedCalendarKey(null);
+  }, []);
+
+  const previewCalendarCell = useCallback(
+    (cellKey: string | undefined) => {
+      if (!cellKey) {
+        return;
+      }
+
+      if (calendarPreviewTimeoutRef.current) {
+        window.clearTimeout(calendarPreviewTimeoutRef.current);
+      }
+
+      setPreviewedCalendarKey(cellKey);
+      calendarPreviewTimeoutRef.current = window.setTimeout(() => {
+        setPreviewedCalendarKey(null);
+        calendarPreviewTimeoutRef.current = null;
+      }, 1800);
+    },
+    []
+  );
+
+  const previewCalendarCellAtPoint = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.pointerType === 'mouse') {
+        return;
+      }
+
+      const element = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      );
+      const calendarButton = element?.closest<HTMLButtonElement>(
+        '[data-calendar-key]'
+      );
+
+      if (!calendarButton || calendarButton.disabled) {
+        return;
+      }
+
+      previewCalendarCell(calendarButton.dataset.calendarKey);
+    },
+    [previewCalendarCell]
+  );
+
+  useEffect(() => clearCalendarPreview, [clearCalendarPreview]);
 
   const getActivitiesForFilter = useCallback(
     (filter: string) => {
@@ -823,7 +872,6 @@ const HomeView = ({
       }
 
       setPage(Math.floor(runIndex / ROWS_PER_PAGE));
-      setMobilePage(Math.floor(runIndex / MOBILE_ROWS_PER_PAGE));
     },
     [getActivitiesForFilter]
   );
@@ -839,7 +887,6 @@ const HomeView = ({
       if (years.includes(monthYear) && yearFilter !== monthYear) {
         setYearFilter(monthYear);
         setPage(0);
-        setMobilePage(0);
       }
 
       if (monthKey === calendarMonth) {
@@ -975,17 +1022,9 @@ const HomeView = ({
     const start = page * ROWS_PER_PAGE;
     return displayedActivities.slice(start, start + ROWS_PER_PAGE);
   }, [displayedActivities, page]);
-  const mobilePagedRuns = useMemo(() => {
-    const start = mobilePage * MOBILE_ROWS_PER_PAGE;
-    return displayedActivities.slice(start, start + MOBILE_ROWS_PER_PAGE);
-  }, [displayedActivities, mobilePage]);
   const pageCount = Math.max(
     1,
     Math.ceil(displayedActivities.length / ROWS_PER_PAGE)
-  );
-  const mobilePageCount = Math.max(
-    1,
-    Math.ceil(displayedActivities.length / MOBILE_ROWS_PER_PAGE)
   );
 
   const yearDistance = totalDistance(currentYearRuns);
@@ -1137,7 +1176,6 @@ const HomeView = ({
     (year: string) => {
       setYearFilter(year);
       setPage(0);
-      setMobilePage(0);
       setSelectedRun(null);
 
       if (year === 'All' || calendarMonth.slice(0, 4) === year) {
@@ -1152,385 +1190,365 @@ const HomeView = ({
   const goToPreviousPage = () => setPage((current) => Math.max(0, current - 1));
   const goToNextPage = () =>
     setPage((current) => Math.min(pageCount - 1, current + 1));
-  const goToPreviousMobilePage = () =>
-    setMobilePage((current) => Math.max(0, current - 1));
-  const goToNextMobilePage = () =>
-    setMobilePage((current) => Math.min(mobilePageCount - 1, current + 1));
+
+  const renderMetricCards = () => (
+    <>
+      <MetricCard
+        label="Total Distance"
+        value={allDistance.toFixed(2)}
+        unit={` ${DIST_UNIT}`}
+        detailIcons={['bolt', 'clock']}
+        details={[`${sortedActivities.length} runs`, formatDurationShort(allSeconds)]}
+        stackDetails
+        overlay="点击打开热力图"
+        onClick={() => navigate('/heatmap')}
+      />
+      <MetricCard
+        label="Yearly Goal"
+        value={yearDistance.toFixed(2)}
+        unit={` / ${YEAR_GOAL} ${DIST_UNIT}`}
+        detailIcons={['bolt', 'clock']}
+        details={[
+          `${currentYearRuns.length} runs`,
+          formatDurationShort(totalSeconds(currentYearRuns)),
+        ]}
+        progress={(yearDistance / YEAR_GOAL) * 100}
+        trend={{
+          text: `${Math.abs(yearDistance - previousYearDistance).toFixed(
+            2
+          )} ${DIST_UNIT} vs last year`,
+          positive: yearDistance >= previousYearDistance,
+        }}
+      />
+      <MetricCard
+        label="Monthly Goal"
+        value={monthDistance.toFixed(2)}
+        unit={` / ${MONTH_GOAL} ${DIST_UNIT}`}
+        detailIcons={['bolt', 'clock']}
+        details={[
+          `${currentMonthRuns.length} runs`,
+          formatDurationShort(totalSeconds(currentMonthRuns)),
+        ]}
+        progress={(monthDistance / MONTH_GOAL) * 100}
+        trend={{
+          text: `${Math.abs(monthDistance - previousMonthDistance).toFixed(
+            2
+          )} ${DIST_UNIT} vs last month`,
+          positive: monthDistance >= previousMonthDistance,
+        }}
+      />
+    </>
+  );
+
+  const renderEventSummary = (id?: string) => (
+    <button
+      type="button"
+      id={id}
+      className={`${styles.panel} ${styles.eventPanel}`}
+      onClick={() => navigate('/events')}
+    >
+      <span className={styles.eventCount}>{marathonRuns.length}</span>
+      <span className={styles.eventTitle}>
+        <strong>Marathon Events</strong>
+        <span>in {thisYear}</span>
+      </span>
+      <span className={styles.latestFinish}>
+        <span>Latest Finish</span>
+        <strong>{latestLongRun ? activityTitleForRun(latestLongRun) : '-'}</strong>
+        <small>
+          {latestLongRun
+            ? latestLongRun.start_date_local.slice(0, 10).replaceAll('-', '/')
+            : '-'}
+        </small>
+      </span>
+      <span className={styles.cardOverlay}>点击打开赛事记录</span>
+    </button>
+  );
+
+  const renderMapPanel = (
+    className: string,
+    height: number | string,
+    id?: string
+  ) => (
+    <section id={id} className={className}>
+      <RunMap
+        title={selectedRun ? titleForShow(selectedRun) : yearFilter}
+        viewState={viewState}
+        geoData={selectedGeoData}
+        setViewState={setMapViewState}
+        changeYear={() => undefined}
+        thisYear={thisYear}
+        height={height}
+        showYearButtons={false}
+        showTitle={false}
+        onReady={handleMapReady}
+      />
+    </section>
+  );
+
+  const renderCalendarCell = (
+    cell: (typeof calendar.cells)[number],
+    index: number
+  ) => {
+    const isSelectedCell = Boolean(
+      selectedRun && cell.runs.some((run) => run.run_id === selectedRun.run_id)
+    );
+    const calendarRun = isSelectedCell ? selectedRun : cell.runs[0] ?? null;
+    const cellKey = cell.day ? `${calendarMonth}-${cell.day}` : '';
+
+    return (
+      <button
+        type="button"
+        key={`${cell.day ?? 'empty'}-${index}`}
+        className={`${cell.runs.length ? styles.calendarActive : ''} ${
+          isSelectedCell ? styles.calendarSelected : ''
+        } ${
+          cellKey && previewedCalendarKey === cellKey
+            ? styles.calendarPreviewed
+            : ''
+        }`}
+        data-calendar-key={cellKey || undefined}
+        disabled={!cell.day}
+        aria-pressed={cell.day ? isSelectedCell : undefined}
+        onPointerDown={(event) => {
+          if (event.pointerType !== 'mouse') {
+            previewCalendarCell(cellKey);
+          }
+        }}
+        onPointerEnter={(event) => {
+          if (event.pointerType !== 'mouse') {
+            previewCalendarCell(cellKey);
+          }
+        }}
+        onClick={() => {
+          clearCalendarPreview();
+          calendarRun && toggleRunSelection(calendarRun);
+        }}
+      >
+        {calendarRun ? <RouteSpark run={calendarRun} /> : <span />}
+        {cell.runs.length ? (
+          <span className={styles.calendarHoverMeta}>
+            <strong>{cell.day}日</strong>
+            <span>{cell.distance.toFixed(cell.distance >= 10 ? 0 : 1)} km</span>
+          </span>
+        ) : (
+          <small>{cell.day}</small>
+        )}
+      </button>
+    );
+  };
+
+  const renderCalendarPanel = () => (
+    <section className={`${styles.panel} ${styles.calendarPanel}`}>
+      <div className={styles.calendarHeader}>
+        <div>
+          <strong>{calendarMonth.replace('-', '/')}</strong>
+          <span>
+            {calendar.monthlyDistance.toFixed(0)} {DIST_UNIT}
+          </span>
+        </div>
+        <div className={styles.calendarControls}>
+          <button
+            type="button"
+            onClick={() => changeCalendarMonth(shiftMonthKey(calendarMonth, -1))}
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={() => changeCalendarMonth(shiftMonthKey(calendarMonth, 1))}
+            aria-label="Next month"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div className={styles.weekdays}>
+        {WEEKDAY_LABELS.map((day, index) => (
+          <span key={`${day}-${index}`}>{day}</span>
+        ))}
+      </div>
+      <div
+        key={`calendar-${calendarMonth}`}
+        className={`${styles.calendarGrid} ${calendarSlideClass}`}
+        onPointerMove={previewCalendarCellAtPoint}
+      >
+        {calendar.cells.map(renderCalendarCell)}
+      </div>
+    </section>
+  );
+
+  const renderMonthlyBar = (bar: (typeof monthlyBars)[number]) => (
+    <button
+      type="button"
+      key={bar.month}
+      className={`${styles.barItem} ${
+        bar.monthKey === activeMonthlyBarKey ? styles.barItemActive : ''
+      }`}
+      title={`${bar.month} ${bar.distanceLabel} ${DIST_UNIT}`}
+      onMouseEnter={() => setHoveredMonthKey(bar.monthKey)}
+      onMouseLeave={() => setHoveredMonthKey(null)}
+      onFocus={() => setHoveredMonthKey(bar.monthKey)}
+      onBlur={() => setHoveredMonthKey(null)}
+      onClick={() => changeCalendarMonth(bar.monthKey)}
+    >
+      <span className={styles.barColumn}>
+        <span className={styles.barValue}>
+          {bar.distanceLabel}
+          <em>{DIST_UNIT}</em>
+        </span>
+        <span className={styles.barFill} style={{ height: bar.height }} />
+      </span>
+      <small>{bar.month}</small>
+    </button>
+  );
+
+  const renderMonthlyChart = () => (
+    <section className={`${styles.panel} ${styles.chartPanel}`}>
+      <div className={styles.chartHeader}>
+        <strong>Monthly Distance</strong>
+        <div className={styles.chartYearControls}>
+          <button
+            type="button"
+            onClick={() => changeMonthlyChartYear(olderMonthlyChartYear)}
+            disabled={!olderMonthlyChartYear}
+            aria-label="Previous year"
+          >
+            ‹
+          </button>
+          <span>{monthlyChartYear}</span>
+          <button
+            type="button"
+            onClick={() => changeMonthlyChartYear(newerMonthlyChartYear)}
+            disabled={!newerMonthlyChartYear}
+            aria-label="Next year"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div
+        key={`monthly-chart-${monthlyChartYear}`}
+        className={`${styles.barChart} ${monthlyChartSlideClass}`}
+      >
+        {monthlyBars.map(renderMonthlyBar)}
+      </div>
+    </section>
+  );
+
+  const renderYearFilters = () => (
+    <div className={styles.filterRow}>
+      {[...years, 'All'].map((year) => (
+        <button
+          key={year}
+          type="button"
+          className={yearFilter === year ? styles.filterActive : ''}
+          onClick={() => changeFilter(year)}
+        >
+          {year}
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderActivityRow = (
+    run: Activity,
+    index: number,
+    animationBaseDelay = 0
+  ) => {
+    const selected = selectedRun?.run_id === run.run_id;
+
+    return (
+      <tr
+        key={run.run_id}
+        className={`${styles.activityRow} ${selected ? styles.selectedRow : ''}`}
+        style={{
+          animationDelay: `${animationBaseDelay + index * ROW_FADE_STAGGER_MS}ms`,
+        }}
+        onClick={() => toggleRunSelection(run)}
+      >
+        <td>{run.start_date_local}</td>
+        <td>{activityTitleForRun(run)}</td>
+        <td>
+          {(run.distance / M_TO_DIST).toFixed(2)}
+          <span>{DIST_UNIT}</span>
+        </td>
+        <td>{formatDuration(convertMovingTime2Sec(run.moving_time))}</td>
+        <td>{formatPace(run.average_speed)}</td>
+        <td>{run.average_heartrate ? Math.round(run.average_heartrate) : '-'}</td>
+      </tr>
+    );
+  };
+
+  const renderActivityTable = (
+    runs: Activity[],
+    tbodyKey: string,
+    animationBaseDelay = 0,
+    extraWrapClass = ''
+  ) => (
+    <div
+      className={
+        extraWrapClass
+          ? `${styles.tableWrap} ${extraWrapClass}`
+          : styles.tableWrap
+      }
+    >
+      <table className={styles.activityTable}>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Distance</th>
+            <th>Duration</th>
+            <th>Pace</th>
+            <th>HR</th>
+          </tr>
+        </thead>
+        <tbody key={tbodyKey}>
+          {runs.map((run, index) =>
+            renderActivityRow(run, index, animationBaseDelay)
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderPagination = (
+    currentPage: number,
+    currentPageCount: number,
+    onPrevious: () => void,
+    onNext: () => void
+  ) => (
+    <div className={styles.pagination}>
+      <button
+        type="button"
+        onClick={onPrevious}
+        disabled={currentPage === 0}
+        aria-label="Previous page"
+      >
+        ‹
+      </button>
+      <span>
+        Page {currentPage + 1} of {currentPageCount}
+      </span>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={currentPage >= currentPageCount - 1}
+        aria-label="Next page"
+      >
+        ›
+      </button>
+    </div>
+  );
 
   return (
     <main className={styles.main}>
-      <section className={styles.mobileHome}>
-        <div className={styles.mobileGoalGrid}>
-          <button
-            type="button"
-            className={`${styles.mobileGoalCard} ${styles.mobileGoalCardWide} ${styles.mobileGoalCardButton}`}
-            onClick={() => navigate('/heatmap')}
-          >
-            <span className={styles.metricLabel}>Total Distance</span>
-            <span className={styles.mobileGoalValue}>
-              {allDistance.toFixed(2)}
-              <span>{DIST_UNIT}</span>
-            </span>
-            <span className={styles.metricDetails}>
-              <span>{sortedActivities.length} runs</span>
-              <span>{formatDurationShort(allSeconds)}</span>
-            </span>
-          </button>
-          <div className={styles.mobileGoalCard}>
-            <span className={styles.metricLabel}>Yearly Goal</span>
-            <span className={styles.mobileGoalValue}>
-              {yearDistance.toFixed(2)}
-              <span>/{YEAR_GOAL}</span>
-            </span>
-            <span className={styles.progressTrack}>
-              <span
-                className={styles.progressBar}
-                style={{
-                  width: `${Math.min(100, (yearDistance / YEAR_GOAL) * 100)}%`,
-                }}
-              />
-            </span>
-          </div>
-          <div className={styles.mobileGoalCard}>
-            <span className={styles.metricLabel}>Monthly Goal</span>
-            <span className={styles.mobileGoalValue}>
-              {monthDistance.toFixed(2)}
-              <span>/{MONTH_GOAL}</span>
-            </span>
-            <span className={styles.progressTrack}>
-              <span
-                className={styles.progressBar}
-                style={{
-                  width: `${Math.min(100, (monthDistance / MONTH_GOAL) * 100)}%`,
-                }}
-              />
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className={`${styles.panel} ${styles.eventPanel}`}
-          onClick={() => navigate('/events')}
-        >
-          <span className={styles.eventCount}>{marathonRuns.length}</span>
-          <span className={styles.eventTitle}>
-            <strong>Marathon Events</strong>
-            <span>in {thisYear}</span>
-          </span>
-          <span className={styles.latestFinish}>
-            <span>Latest Finish</span>
-            <strong>
-              {latestLongRun ? activityTitleForRun(latestLongRun) : '-'}
-            </strong>
-            <small>
-              {latestLongRun
-                ? latestLongRun.start_date_local.slice(0, 10).replaceAll('-', '/')
-                : '-'}
-            </small>
-          </span>
-          <span className={styles.cardOverlay}>点击打开赛事记录</span>
-        </button>
-
-        <section className={styles.mobileMapPanel}>
-          <RunMap
-            title={selectedRun ? titleForShow(selectedRun) : yearFilter}
-            viewState={viewState}
-            geoData={selectedGeoData}
-            setViewState={setMapViewState}
-            changeYear={() => undefined}
-            thisYear={thisYear}
-            height={200}
-            showYearButtons={false}
-            showTitle={false}
-            onReady={handleMapReady}
-          />
-        </section>
-
-        <section className={`${styles.panel} ${styles.mobileCalendarPanel}`}>
-          <div className={styles.calendarHeader}>
-            <div>
-              <strong>{calendarMonth.replace('-', '/')}</strong>
-              <span>
-                {calendar.monthlyDistance.toFixed(0)} {DIST_UNIT}
-              </span>
-            </div>
-            <div className={styles.calendarControls}>
-              <button
-                type="button"
-                onClick={() =>
-                  changeCalendarMonth(shiftMonthKey(calendarMonth, -1))
-                }
-                aria-label="Previous month"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  changeCalendarMonth(shiftMonthKey(calendarMonth, 1))
-                }
-                aria-label="Next month"
-              >
-                ›
-              </button>
-            </div>
-          </div>
-          <div className={styles.weekdays}>
-            {WEEKDAY_LABELS.map((day, index) => (
-              <span key={`${day}-${index}`}>{day}</span>
-            ))}
-          </div>
-          <div
-            key={`mobile-calendar-${calendarMonth}`}
-            className={`${styles.calendarGrid} ${calendarSlideClass}`}
-          >
-            {calendar.cells.map((cell, index) => {
-              const isSelectedCell = Boolean(
-                selectedRun &&
-                  cell.runs.some((run) => run.run_id === selectedRun.run_id)
-              );
-              const calendarRun = isSelectedCell
-                ? selectedRun
-                : cell.runs[0] ?? null;
-
-              return (
-                <button
-                  type="button"
-                  key={`${cell.day ?? 'empty'}-${index}`}
-                  className={`${cell.runs.length ? styles.calendarActive : ''} ${
-                    isSelectedCell ? styles.calendarSelected : ''
-                  }`}
-                  disabled={!cell.day}
-                  aria-pressed={cell.day ? isSelectedCell : undefined}
-                  onClick={() => calendarRun && toggleRunSelection(calendarRun)}
-                >
-                  {calendarRun ? <RouteSpark run={calendarRun} /> : <span />}
-                  {cell.runs.length ? (
-                    <span className={styles.calendarHoverMeta}>
-                      <strong>{cell.day}日</strong>
-                      <span>
-                        {cell.distance.toFixed(cell.distance >= 10 ? 0 : 1)} km
-                      </span>
-                    </span>
-                  ) : (
-                    <small>{cell.day}</small>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className={`${styles.panel} ${styles.chartPanel}`}>
-          <div className={styles.chartHeader}>
-            <strong>Monthly Distance</strong>
-            <div className={styles.chartYearControls}>
-              <button
-                type="button"
-                onClick={() => changeMonthlyChartYear(olderMonthlyChartYear)}
-                disabled={!olderMonthlyChartYear}
-                aria-label="Previous year"
-              >
-                ‹
-              </button>
-              <span>{monthlyChartYear}</span>
-              <button
-                type="button"
-                onClick={() => changeMonthlyChartYear(newerMonthlyChartYear)}
-                disabled={!newerMonthlyChartYear}
-                aria-label="Next year"
-              >
-                ›
-              </button>
-            </div>
-          </div>
-          <div
-            key={`mobile-monthly-chart-${monthlyChartYear}`}
-            className={`${styles.barChart} ${monthlyChartSlideClass}`}
-          >
-            {monthlyBars.map((bar) => (
-              <button
-                type="button"
-                key={bar.month}
-                className={`${styles.barItem} ${
-                  bar.monthKey === activeMonthlyBarKey ? styles.barItemActive : ''
-                }`}
-                title={`${bar.month} ${bar.distanceLabel} ${DIST_UNIT}`}
-                onMouseEnter={() => setHoveredMonthKey(bar.monthKey)}
-                onMouseLeave={() => setHoveredMonthKey(null)}
-                onFocus={() => setHoveredMonthKey(bar.monthKey)}
-                onBlur={() => setHoveredMonthKey(null)}
-                onClick={() => changeCalendarMonth(bar.monthKey)}
-              >
-                <span className={styles.barColumn}>
-                  <span className={styles.barValue}>
-                    {bar.distanceLabel}
-                    <em>{DIST_UNIT}</em>
-                  </span>
-                  <span
-                    className={styles.barFill}
-                    style={{ height: bar.height }}
-                  />
-                </span>
-                <small>{bar.month}</small>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className={`${styles.panel} ${styles.mobileLogPanel}`}>
-          <div className={styles.mobileLogHeader}>
-            <span>
-              Activity Log
-            </span>
-            <small>
-              Showing{' '}
-              {displayedActivities.length
-                ? mobilePage * MOBILE_ROWS_PER_PAGE + 1
-                : 0}
-              -
-              {Math.min(
-                (mobilePage + 1) * MOBILE_ROWS_PER_PAGE,
-                displayedActivities.length
-              )}{' '}
-              of {displayedActivities.length}
-            </small>
-          </div>
-
-          <div className={styles.filterRow}>
-            {[...years, 'All'].map((year) => (
-              <button
-                key={year}
-                type="button"
-                className={yearFilter === year ? styles.filterActive : ''}
-                onClick={() => changeFilter(year)}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
-          <div className={`${styles.tableWrap} ${styles.mobileTableWrap}`}>
-            <table className={styles.activityTable}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Name</th>
-                  <th>Distance</th>
-                  <th>Duration</th>
-                  <th>Pace</th>
-                  <th>HR</th>
-                </tr>
-              </thead>
-              <tbody key={`mobile-${yearFilter}-${mobilePage}`}>
-                {mobilePagedRuns.map((run, index) => {
-                  const selected = selectedRun?.run_id === run.run_id;
-                  return (
-                    <tr
-                      key={run.run_id}
-                      className={`${styles.activityRow} ${
-                        selected ? styles.selectedRow : ''
-                      }`}
-                      style={{
-                        animationDelay: `${index * ROW_FADE_STAGGER_MS}ms`,
-                      }}
-                      onClick={() => toggleRunSelection(run)}
-                    >
-                      <td>{run.start_date_local}</td>
-                      <td>{activityTitleForRun(run)}</td>
-                      <td>
-                        {(run.distance / M_TO_DIST).toFixed(2)}
-                        <span>{DIST_UNIT}</span>
-                      </td>
-                      <td>
-                        {formatDuration(convertMovingTime2Sec(run.moving_time))}
-                      </td>
-                      <td>{formatPace(run.average_speed)}</td>
-                      <td>
-                        {run.average_heartrate
-                          ? Math.round(run.average_heartrate)
-                          : '-'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className={styles.pagination}>
-            <button
-              type="button"
-              onClick={goToPreviousMobilePage}
-              disabled={mobilePage === 0}
-              aria-label="Previous page"
-            >
-              ‹
-            </button>
-            <span>
-              Page {mobilePage + 1} of {mobilePageCount}
-            </span>
-            <button
-              type="button"
-              onClick={goToNextMobilePage}
-              disabled={mobilePage >= mobilePageCount - 1}
-              aria-label="Next page"
-            >
-              ›
-            </button>
-          </div>
-        </section>
-      </section>
-
       <section className={styles.dashboardGrid}>
         <div className={styles.leftColumn}>
           <div className={styles.metricsGrid}>
-            <MetricCard
-              label="Total Distance"
-              value={allDistance.toFixed(2)}
-              unit={` ${DIST_UNIT}`}
-              detailIcons={['bolt', 'clock']}
-              details={[
-                `${sortedActivities.length} runs`,
-                formatDurationShort(allSeconds),
-              ]}
-              stackDetails
-              overlay="点击打开热力图"
-              onClick={() => navigate('/heatmap')}
-            />
-            <MetricCard
-              label="Yearly Goal"
-              value={yearDistance.toFixed(2)}
-              unit={` / ${YEAR_GOAL} ${DIST_UNIT}`}
-              detailIcons={['bolt', 'clock']}
-              details={[
-                `${currentYearRuns.length} runs`,
-                formatDurationShort(totalSeconds(currentYearRuns)),
-              ]}
-              progress={(yearDistance / YEAR_GOAL) * 100}
-              trend={{
-                text: `${Math.abs(yearDistance - previousYearDistance).toFixed(
-                  2
-                )} ${DIST_UNIT} vs last year`,
-                positive: yearDistance >= previousYearDistance,
-              }}
-            />
-            <MetricCard
-              label="Monthly Goal"
-              value={monthDistance.toFixed(2)}
-              unit={` / ${MONTH_GOAL} ${DIST_UNIT}`}
-              detailIcons={['bolt', 'clock']}
-              details={[
-                `${currentMonthRuns.length} runs`,
-                formatDurationShort(totalSeconds(currentMonthRuns)),
-              ]}
-              progress={(monthDistance / MONTH_GOAL) * 100}
-              trend={{
-                text: `${Math.abs(
-                  monthDistance - previousMonthDistance
-                ).toFixed(2)} ${DIST_UNIT} vs last month`,
-                positive: monthDistance >= previousMonthDistance,
-              }}
-            />
+            {renderMetricCards()}
           </div>
 
           <section id="activity-log" className={styles.panel}>
@@ -1546,275 +1564,25 @@ const HomeView = ({
                 of {displayedActivities.length}
               </span>
             </div>
-            <div className={styles.filterRow}>
-              {[...years, 'All'].map((year) => (
-                <button
-                  key={year}
-                  type="button"
-                  className={yearFilter === year ? styles.filterActive : ''}
-                  onClick={() => changeFilter(year)}
-                >
-                  {year}
-                </button>
-              ))}
-            </div>
-            <div className={styles.tableWrap}>
-              <table className={styles.activityTable}>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Name</th>
-                    <th>Distance</th>
-                    <th>Duration</th>
-                    <th>Pace</th>
-                    <th>HR</th>
-                  </tr>
-                </thead>
-                <tbody key={`${yearFilter}-${page}`}>
-                  {pagedRuns.map((run, index) => {
-                    const selected = selectedRun?.run_id === run.run_id;
-                    return (
-                      <tr
-                        key={run.run_id}
-                        className={`${styles.activityRow} ${
-                          selected ? styles.selectedRow : ''
-                        }`}
-                        style={{
-                          animationDelay: `${
-                            ROW_FADE_BASE_DELAY_MS + index * ROW_FADE_STAGGER_MS
-                          }ms`,
-                        }}
-                        onClick={() => toggleRunSelection(run)}
-                      >
-                        <td>{run.start_date_local}</td>
-                        <td>{activityTitleForRun(run)}</td>
-                        <td>
-                          {(run.distance / M_TO_DIST).toFixed(2)}
-                          <span>{DIST_UNIT}</span>
-                        </td>
-                        <td>
-                          {formatDuration(
-                            convertMovingTime2Sec(run.moving_time)
-                          )}
-                        </td>
-                        <td>{formatPace(run.average_speed)}</td>
-                        <td>
-                          {run.average_heartrate
-                            ? Math.round(run.average_heartrate)
-                            : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className={styles.pagination}>
-              <button
-                type="button"
-                onClick={goToPreviousPage}
-                disabled={page === 0}
-                aria-label="Previous page"
-              >
-                ‹
-              </button>
-              <span>
-                Page {page + 1} of {pageCount}
-              </span>
-              <button
-                type="button"
-                onClick={goToNextPage}
-                disabled={page >= pageCount - 1}
-                aria-label="Next page"
-              >
-                ›
-              </button>
-            </div>
+            {renderYearFilters()}
+            {renderActivityTable(
+              pagedRuns,
+              `${yearFilter}-${page}`,
+              ROW_FADE_BASE_DELAY_MS
+            )}
+            {renderPagination(page, pageCount, goToPreviousPage, goToNextPage)}
           </section>
         </div>
 
         <aside className={styles.rightColumn}>
-          <button
-            type="button"
-            id="events"
-            className={`${styles.panel} ${styles.eventPanel}`}
-            onClick={() => navigate('/events')}
-          >
-            <span className={styles.eventCount}>{marathonRuns.length}</span>
-            <span className={styles.eventTitle}>
-              <strong>Marathon Events</strong>
-              <span>in {thisYear}</span>
-            </span>
-            <span className={styles.latestFinish}>
-              <span>Latest Finish</span>
-              <strong>
-                {latestLongRun ? activityTitleForRun(latestLongRun) : '-'}
-              </strong>
-              <small>
-                {latestLongRun
-                  ? latestLongRun.start_date_local
-                      .slice(0, 10)
-                      .replaceAll('-', '/')
-                  : '-'}
-              </small>
-            </span>
-            <span className={styles.cardOverlay}>点击打开赛事记录</span>
-          </button>
-
-          <section
-            id="map-panel"
-            className={`${styles.panel} ${styles.mapPanel}`}
-          >
-            <RunMap
-              title={selectedRun ? titleForShow(selectedRun) : yearFilter}
-              viewState={viewState}
-              geoData={selectedGeoData}
-              setViewState={setMapViewState}
-              changeYear={() => undefined}
-              thisYear={thisYear}
-              height={300}
-              showYearButtons={false}
-              showTitle={false}
-              onReady={handleMapReady}
-            />
-          </section>
-
-          <section className={`${styles.panel} ${styles.calendarPanel}`}>
-            <div className={styles.calendarHeader}>
-              <div>
-                <strong>{calendarMonth.replace('-', '/')}</strong>
-                <span>
-                  {calendar.monthlyDistance.toFixed(0)} {DIST_UNIT}
-                </span>
-              </div>
-              <div className={styles.calendarControls}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    changeCalendarMonth(shiftMonthKey(calendarMonth, -1))
-                  }
-                  aria-label="Previous month"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    changeCalendarMonth(shiftMonthKey(calendarMonth, 1))
-                  }
-                  aria-label="Next month"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-            <div className={styles.weekdays}>
-              {WEEKDAY_LABELS.map((day, index) => (
-                <span key={`${day}-${index}`}>{day}</span>
-              ))}
-            </div>
-            <div
-              key={`desktop-calendar-${calendarMonth}`}
-              className={`${styles.calendarGrid} ${calendarSlideClass}`}
-            >
-              {calendar.cells.map((cell, index) => {
-                const isSelectedCell = Boolean(
-                  selectedRun &&
-                    cell.runs.some((run) => run.run_id === selectedRun.run_id)
-                );
-                const calendarRun = isSelectedCell
-                  ? selectedRun
-                  : cell.runs[0] ?? null;
-
-                return (
-                  <button
-                    type="button"
-                    key={`${cell.day ?? 'empty'}-${index}`}
-                    className={`${cell.runs.length ? styles.calendarActive : ''} ${
-                      isSelectedCell ? styles.calendarSelected : ''
-                    }`}
-                    disabled={!cell.day}
-                    aria-pressed={cell.day ? isSelectedCell : undefined}
-                    onClick={() =>
-                      calendarRun && toggleRunSelection(calendarRun)
-                    }
-                  >
-                    {calendarRun ? <RouteSpark run={calendarRun} /> : <span />}
-                    {cell.runs.length ? (
-                      <span className={styles.calendarHoverMeta}>
-                        <strong>{cell.day}日</strong>
-                        <span>
-                          {cell.distance.toFixed(cell.distance >= 10 ? 0 : 1)}{' '}
-                          km
-                        </span>
-                      </span>
-                    ) : (
-                      <small>{cell.day}</small>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className={`${styles.panel} ${styles.chartPanel}`}>
-            <div className={styles.chartHeader}>
-              <strong>Monthly Distance</strong>
-              <div className={styles.chartYearControls}>
-                <button
-                  type="button"
-                  onClick={() => changeMonthlyChartYear(olderMonthlyChartYear)}
-                  disabled={!olderMonthlyChartYear}
-                  aria-label="Previous year"
-                >
-                  ‹
-                </button>
-                <span>{monthlyChartYear}</span>
-                <button
-                  type="button"
-                  onClick={() => changeMonthlyChartYear(newerMonthlyChartYear)}
-                  disabled={!newerMonthlyChartYear}
-                  aria-label="Next year"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-            <div
-              key={`monthly-chart-${monthlyChartYear}`}
-              className={`${styles.barChart} ${monthlyChartSlideClass}`}
-            >
-              {monthlyBars.map((bar) => (
-                <button
-                  type="button"
-                  key={bar.month}
-                  className={`${styles.barItem} ${
-                    bar.monthKey === activeMonthlyBarKey
-                      ? styles.barItemActive
-                      : ''
-                  }`}
-                  title={`${bar.month} ${bar.distanceLabel} ${DIST_UNIT}`}
-                  onMouseEnter={() => setHoveredMonthKey(bar.monthKey)}
-                  onMouseLeave={() => setHoveredMonthKey(null)}
-                  onFocus={() => setHoveredMonthKey(bar.monthKey)}
-                  onBlur={() => setHoveredMonthKey(null)}
-                  onClick={() => changeCalendarMonth(bar.monthKey)}
-                >
-                  <span className={styles.barColumn}>
-                    <span className={styles.barValue}>
-                      {bar.distanceLabel}
-                      <em>{DIST_UNIT}</em>
-                    </span>
-                    <span
-                      className={styles.barFill}
-                      style={{ height: bar.height }}
-                    />
-                  </span>
-                  <small>{bar.month}</small>
-                </button>
-              ))}
-            </div>
-          </section>
+          {renderEventSummary('events')}
+          {renderMapPanel(
+            `${styles.panel} ${styles.mapPanel}`,
+            MAP_PANEL_HEIGHT,
+            'map-panel'
+          )}
+          {renderCalendarPanel()}
+          {renderMonthlyChart()}
         </aside>
       </section>
     </main>
@@ -1907,11 +1675,15 @@ const HeatmapView = ({
               <div className={styles.heatmapYearHeader}>
                 <strong>{yearHeatmap.year}</strong>
                 <div className={styles.heatStats}>
-                  <span>{yearHeatmap.stats.count} runs</span>
-                  <span>{yearHeatmap.stats.distance.toFixed(0)} km</span>
-                  <span>{formatDurationShort(yearHeatmap.stats.seconds)}</span>
-                  <span>{yearHeatmap.stats.avgPace} /km</span>
-                  <span>{yearHeatmap.stats.avgHeartRate || '-'} bpm</span>
+                  <div className={styles.heatStatsPrimary}>
+                    <span>{yearHeatmap.stats.count} runs</span>
+                    <span>{yearHeatmap.stats.distance.toFixed(0)} km</span>
+                    <span>{formatDurationShort(yearHeatmap.stats.seconds)}</span>
+                  </div>
+                  <div className={styles.heatStatsSecondary}>
+                    <span>{yearHeatmap.stats.avgPace} /km</span>
+                    <span>{yearHeatmap.stats.avgHeartRate || '-'} bpm</span>
+                  </div>
                 </div>
               </div>
               <div className={styles.heatmapWrap}>
@@ -2087,7 +1859,9 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
   );
 };
 
-const NextDashboard = ({ view = 'home' }: NextDashboardProps) => {
+const NextDashboard = ({ view }: NextDashboardProps) => {
+  const location = useLocation();
+  const currentView = view ?? dashboardViewForPath(location.pathname);
   const { activities, years, thisYear } = useActivities();
   const sortedActivities = useMemo(
     () => activities.slice().sort(sortDateFunc),
@@ -2101,9 +1875,17 @@ const NextDashboard = ({ view = 'home' }: NextDashboardProps) => {
     document.title = 'Running Page';
   }, []);
 
+  if (currentView === 'redirect-events') {
+    return <Navigate to="/events" replace />;
+  }
+
+  if (currentView === 'not-found') {
+    return <NotFoundPage />;
+  }
+
   return (
     <PageShell thisYear={thisYear}>
-      {view === 'home' && (
+      {currentView === 'home' && (
         <HomeView
           years={years}
           thisYear={thisYear}
@@ -2111,10 +1893,12 @@ const NextDashboard = ({ view = 'home' }: NextDashboardProps) => {
           latestRun={latestRun}
         />
       )}
-      {view === 'heatmap' && (
+      {currentView === 'heatmap' && (
         <HeatmapView years={years} sortedActivities={sortedActivities} />
       )}
-      {view === 'events' && <EventsView sortedActivities={sortedActivities} />}
+      {currentView === 'events' && (
+        <EventsView sortedActivities={sortedActivities} />
+      )}
     </PageShell>
   );
 };
