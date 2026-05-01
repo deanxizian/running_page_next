@@ -55,6 +55,7 @@ jobs:
       - name: Build
         env:
           REPO_NAME: ${{ github.event.repository.name }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN || vars.VITE_MAPBOX_TOKEN }}
         run: PATH_PREFIX=/$REPO_NAME pnpm build
 
       - uses: actions/upload-pages-artifact@v3
