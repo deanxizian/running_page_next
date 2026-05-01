@@ -1,0 +1,6 @@
+stravalib==0.10.4
+arrow
+geopy
+polyline
+sqlalchemy
+haversine==2.8.0

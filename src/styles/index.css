@@ -1,0 +1,143 @@
+/* IBM Plex Sans and IBM Plex Mono fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+:root {
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-red-500: #ef4444;
+  --color-sky-800: #075985;
+  --color-sky-900: #0c4a6e;
+  --color-zinc-300: #d4d4d8;
+  /* global */
+  --color-primary: var(--color-brand);
+  --color-secondary: var(--color-secondary);
+  --color-background: var(--color-bg);
+  --color-text-primary: var(--color-tx);
+  --color-hr-primary: var(--color-hr);
+  --color-selected: var(--color-selected);
+  /* table */
+  --color-run-date: var(--color-run-date);
+  --color-run-table-thead: var(--color-run-table-thead);
+  --color-run-row-hover-background: var(--color-run-row-hover-background);
+  /* activity-card */
+  --color-activity-card: var(--color-activity-card);
+  /* fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* 1. System Theme (Base) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-brand: var(--color-sky-900);
+    --color-secondary: var(--color-sky-800);
+    --color-bg: var(--color-neutral-100);
+    --color-tx: var(--color-sky-900);
+    --color-hr: var(--color-neutral-300);
+    --color-selected: var(--color-sky-900);
+    --color-run-date: var(--color-neutral-800);
+    --color-run-table-thead: var(--color-neutral-800);
+    --color-run-row-hover-background: var(--color-neutral-200);
+    --color-activity-card: var(--color-neutral-300);
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-brand: #e0ed5e;
+    --color-secondary: #ccd94a;
+    --color-bg: var(--color-neutral-900);
+    --color-tx: var(--color-brand);
+    --color-hr: var(--color-red-500);
+    --color-selected: var(--color-brand);
+    --color-run-date: var(--color-neutral-300);
+    --color-run-table-thead: var(--color-zinc-300);
+    --color-run-row-hover-background: var(--color-neutral-800);
+    --color-activity-card: var(--color-neutral-700);
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+}
+
+/* 2. Manual Override (Higher Priority) */
+[data-theme='light'] {
+  --color-brand: var(--color-sky-900);
+  --color-secondary: var(--color-sky-800);
+  --color-bg: var(--color-neutral-100);
+  --color-tx: var(--color-sky-900);
+  --color-hr: var(--color-neutral-300);
+  --color-selected: var(--color-sky-900);
+  --color-run-date: var(--color-neutral-800);
+  --color-run-table-thead: var(--color-neutral-800);
+  --color-run-row-hover-background: var(--color-neutral-200);
+  --color-activity-card: var(--color-neutral-300);
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+[data-theme='dark'] {
+  --color-brand: #e0ed5e;
+  --color-secondary: #ccd94a;
+  --color-bg: var(--color-neutral-900);
+  --color-tx: var(--color-brand);
+  --color-hr: var(--color-red-500);
+  --color-selected: var(--color-brand);
+  --color-run-date: var(--color-neutral-300);
+  --color-run-table-thead: var(--color-zinc-300);
+  --color-run-row-hover-background: var(--color-neutral-800);
+  --color-activity-card: var(--color-neutral-700);
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+@layer base {
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-brand);
+    transition:
+      background-color 0.1s ease,
+      color 0.1s ease;
+    font-family: var(--font-sans);
+  }
+}
+
+img::selection {
+  background: transparent;
+}
+
+img::-moz-selection {
+  background: transparent;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+}
+
+iframe {
+  border: none;
+}
+
+hr {
+  border-top: none;
+  border-bottom: 1px solid;
+  border-color: var(--color-hr-primary);
+  margin: 2rem 0;
+}
+
+@media only screen and (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+}

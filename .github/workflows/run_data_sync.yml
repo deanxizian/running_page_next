@@ -1,0 +1,55 @@
+name: Run Data Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs every day at 00:00 Asia-Shanghai / 16:00 UTC.
+    - cron: '0 16 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strava-data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync Strava data
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Sync running activities from Strava
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_CLIENT_REFRESH_TOKEN: ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
+        run: |
+          test -n "$STRAVA_CLIENT_ID"
+          test -n "$STRAVA_CLIENT_SECRET"
+          test -n "$STRAVA_CLIENT_REFRESH_TOKEN"
+          python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" --only-run
+
+      - name: Commit updated running data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add run_page/data.db src/static/activities.json
+          git diff --cached --quiet && echo "No running data changes to commit." || git commit -m "update Strava running data"
+          git push || echo "No changes to push."
