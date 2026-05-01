@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: strava-data-sync
@@ -47,9 +48,22 @@ jobs:
           python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" --only-run
 
       - name: Commit updated running data
+        id: commit
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add run_page/data.db src/static/activities.json
-          git diff --cached --quiet && echo "No running data changes to commit." || git commit -m "update Strava running data"
-          git push || echo "No changes to push."
+          if git diff --cached --quiet; then
+            echo "No running data changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "update Strava running data"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger GitHub Pages deployment
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run gh-pages.yml --ref "$GITHUB_REF_NAME"
