@@ -232,7 +232,7 @@
 
 .rightColumn > .chartPanel {
   animation-delay: 350ms;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
 }
 
 .heatmapPageHeader {
@@ -277,6 +277,7 @@
 
 .panel,
 .metricCard {
+  box-sizing: border-box;
   border: 1px solid #27272a;
   border-radius: 16px;
   background: #18181b;
@@ -303,6 +304,20 @@
 
 .metricCardInteractive {
   cursor: pointer;
+}
+
+.cardTouchRevealActive {
+  border-color: rgba(227, 25, 55, 0.75);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -18px rgba(227, 25, 55, 0.8);
+}
+
+.cardTouchRevealActive .cardOverlay {
+  opacity: 1;
+}
+
+.cardTouchRevealActive .metricLabel {
+  color: #fff;
 }
 
 .cardOverlay {
@@ -447,6 +462,10 @@
   align-items: center;
 }
 
+.metricTrendSlot {
+  transform: translateY(12px);
+}
+
 .metricSlotEmpty {
   visibility: hidden;
 }
@@ -539,19 +558,35 @@
 
 .tableWrap {
   flex: 1 0 auto;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(113, 113, 122, 0.7) transparent;
+}
+
+.tableWrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tableWrap::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(113, 113, 122, 0.55);
 }
 
 .activityTable {
-  width: 100%;
-  min-width: 0;
+  --activity-edge-pad: clamp(20px, 3.125vw, 40px);
+  --activity-cell-x: clamp(4px, 0.7vw, 8px);
+  --activity-date-gap: clamp(8px, 0.95vw, 12px);
+  --activity-name-gap: clamp(12px, 1.4vw, 18px);
+  width: min(100%, 720px);
+  min-width: 640px;
+  margin: 0 auto;
   border-collapse: collapse;
   table-layout: fixed;
   text-align: left;
 }
 
 .activityTable th {
-  padding: 16px 14px;
+  padding: 16px var(--activity-cell-x);
   background: rgba(24, 24, 27, 0.7);
   color: #71717a;
   font-size: 12px;
@@ -560,7 +595,7 @@
 }
 
 .activityTable td {
-  padding: 16px 14px;
+  padding: 16px var(--activity-cell-x);
   border-top: 1px solid rgba(63, 63, 70, 0.26);
   color: #d4d4d8;
   font-family: var(--font-mono);
@@ -572,32 +607,39 @@
 
 .activityTable th:nth-child(1),
 .activityTable td:nth-child(1) {
-  width: 28%;
+  width: 20.7%;
+  padding-left: var(--activity-edge-pad);
+  padding-right: var(--activity-date-gap);
+  text-align: left;
 }
 
 .activityTable th:nth-child(2),
 .activityTable td:nth-child(2) {
-  width: 17%;
+  width: 18.7%;
+  padding-left: var(--activity-name-gap);
+  padding-right: var(--activity-cell-x);
 }
 
 .activityTable th:nth-child(3),
 .activityTable td:nth-child(3) {
-  width: 16%;
+  width: 18.7%;
 }
 
 .activityTable th:nth-child(4),
 .activityTable td:nth-child(4) {
-  width: 15%;
+  width: 19.7%;
 }
 
 .activityTable th:nth-child(5),
 .activityTable td:nth-child(5) {
-  width: 13%;
+  width: 15.7%;
 }
 
 .activityTable th:nth-child(6),
 .activityTable td:nth-child(6) {
-  width: 11%;
+  width: 6.5%;
+  padding-right: var(--activity-edge-pad);
+  text-align: right;
 }
 
 .activityTable td:nth-child(2),
@@ -614,6 +656,26 @@
   margin-left: 5px;
   color: #71717a;
   font-size: 11px;
+}
+
+.activityTable .activityDateCell {
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.activityTable .activityDateCell span {
+  display: block;
+  margin-left: 0;
+  color: #d4d4d8;
+  font-size: inherit;
+}
+
+.activityTable .activityDateCell small {
+  display: block;
+  margin-top: 3px;
+  color: #71717a;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .activityTable tr {
@@ -962,6 +1024,8 @@
 
 .chartPanel {
   padding: 26px;
+  display: flex;
+  flex-direction: column;
 }
 
 .chartHeader span {
@@ -973,7 +1037,9 @@
 
 .barChart {
   height: 190px;
+  min-height: 190px;
   margin-top: 28px;
+  flex: 1 1 190px;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: end;
@@ -996,7 +1062,9 @@
 }
 
 .barColumn {
+  position: relative;
   min-height: 0;
+  min-width: 0;
   width: 100%;
   height: 100%;
   display: flex;
@@ -1007,6 +1075,8 @@
 }
 
 .barValue {
+  position: relative;
+  z-index: 2;
   color: #d4d4d8;
   font-family: var(--font-mono);
   font-size: 13px;
@@ -1017,6 +1087,9 @@
   transition:
     opacity 0.18s ease,
     transform 0.18s ease;
+  text-shadow:
+    0 1px 2px #18181b,
+    0 0 8px #18181b;
   white-space: nowrap;
 }
 
@@ -1029,10 +1102,12 @@
 }
 
 .barFill {
+  position: relative;
+  z-index: 1;
   width: 22px;
   max-width: calc(100% - 6px);
   min-height: 4px;
-  max-height: calc(100% - 20px);
+  max-height: calc(100% - 32px);
   border-radius: 4px 4px 0 0;
   background: #52525b;
   transform-origin: bottom center;
@@ -1043,7 +1118,7 @@
 
 .barItem:hover .barFill {
   background: #e31937;
-  transform: scaleY(1.04);
+  transform: none;
 }
 
 .barItemActive .barFill {
@@ -1513,6 +1588,11 @@
   justify-content: center;
   -webkit-backdrop-filter: blur(18px) saturate(1.18);
   backdrop-filter: blur(18px) saturate(1.18);
+  animation: modalBackdropIn 0.22s ease forwards;
+}
+
+.modalBackdropClosing {
+  animation: modalBackdropOut 0.22s ease forwards;
 }
 
 .monthModal,
@@ -1560,6 +1640,11 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: eventModalIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.eventModalClosing {
+  animation: eventModalOut 0.2s ease forwards;
 }
 
 .eventModalMap {
@@ -1567,6 +1652,50 @@
   margin-top: 8px;
   overflow: hidden;
   border-radius: 16px;
+}
+
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalBackdropOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes eventModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes eventModalOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
 }
 
 .footer {
@@ -1586,6 +1715,8 @@
   .eventYearGroup,
   .eventCard,
   .activityRow,
+  .modalBackdrop,
+  .eventModal,
   .calendarSlideForward,
   .calendarSlideBackward {
     animation: none;
@@ -1624,7 +1755,7 @@
   .rightColumn > .chartPanel {
     order: 5;
     width: 100%;
-    align-self: start;
+    align-self: stretch;
   }
 
   .leftColumn > .panel {
@@ -1651,6 +1782,10 @@
   .main {
     max-width: none;
     padding-bottom: 30px;
+  }
+
+  .navLinks {
+    font-size: 12px;
   }
 
   .dashboardGrid {
@@ -1688,6 +1823,10 @@
 
   .metricsGrid .metricCard .metricTrend {
     font-size: 10px;
+  }
+
+  .metricsGrid .metricCard .metricTrendSlot {
+    transform: translateY(6px);
   }
 
   .mapPanel {
@@ -1761,6 +1900,8 @@
 
   .barChart {
     height: 150px;
+    min-height: 150px;
+    flex-basis: 150px;
     margin-top: 22px;
   }
 
@@ -1773,7 +1914,76 @@
   }
 
   .activityTable {
-    min-width: 720px;
+    width: 640px;
+    min-width: 640px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .activityTable th,
+  .activityTable td {
+    padding: 12px var(--activity-cell-x);
+    font-size: 11px;
+  }
+
+  .activityTable th:nth-child(1),
+  .activityTable td:nth-child(1) {
+    width: 20.7%;
+  }
+
+  .activityTable th:nth-child(2),
+  .activityTable td:nth-child(2) {
+    width: 18.7%;
+  }
+
+  .activityTable th:nth-child(1),
+  .activityTable td:nth-child(1) {
+    padding-left: var(--activity-edge-pad);
+    padding-right: var(--activity-date-gap);
+    text-align: left;
+  }
+
+  .activityTable th:nth-child(2),
+  .activityTable td:nth-child(2) {
+    padding-left: var(--activity-name-gap);
+    padding-right: var(--activity-cell-x);
+  }
+
+  .activityTable th:nth-child(3),
+  .activityTable td:nth-child(3) {
+    width: 18.7%;
+  }
+
+  .activityTable th:nth-child(4),
+  .activityTable td:nth-child(4) {
+    width: 19.7%;
+  }
+
+  .activityTable th:nth-child(5),
+  .activityTable td:nth-child(5) {
+    width: 15.7%;
+  }
+
+  .activityTable th:nth-child(6),
+  .activityTable td:nth-child(6) {
+    width: 6.5%;
+    padding-right: var(--activity-edge-pad);
+    text-align: right;
+  }
+
+  .activityTable td span {
+    margin-left: 2px;
+    font-size: 11px;
+  }
+
+  .activityTable .activityDateCell span {
+    margin-left: 0;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .activityTable .activityDateCell small {
+    font-size: 10px;
   }
 
   .eventCards {
@@ -1793,12 +2003,6 @@
 
   .filterRow {
     padding: 0 18px 18px;
-  }
-
-  .activityTable th,
-  .activityTable td {
-    padding-left: 18px;
-    padding-right: 18px;
   }
 
   .eventPanel {
@@ -1848,24 +2052,36 @@
   }
 }
 
+@media (min-width: 360px) and (max-width: 760px) {
+  .navLinks {
+    width: min(55vw, 232px);
+  }
+}
+
+@media (max-width: 340px) {
+  .navLinks {
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 700px) {
   .heatmapYearHeader {
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px 14px;
+    gap: 8px;
   }
 
   .heatmapYearHeader .heatStats {
     flex-direction: column;
     flex-wrap: nowrap;
     align-items: flex-end;
-    gap: 6px;
+    gap: 4px;
   }
 
   .heatStatsPrimary,
   .heatStatsSecondary {
     display: grid;
     justify-content: end;
-    gap: 6px;
+    gap: 4px;
   }
 
   .heatStatsPrimary {
@@ -1877,12 +2093,12 @@
   }
 
   .heatmapYearHeader .heatStats span {
-    padding: 5px 8px;
-    font-size: 12px;
+    padding: 4px 6px;
+    font-size: 11px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
   .heatmapYearHeader {
     grid-template-columns: 1fr;
   }
@@ -1895,6 +2111,8 @@
 @media (max-width: 520px) {
   .metricsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 24px;
   }
 
   .metricsGrid .metricCard:first-child {

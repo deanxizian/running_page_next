@@ -1,6 +1,7 @@
 import {
   ReactNode,
   CSSProperties,
+  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -65,6 +66,8 @@ const MAP_FIT_MARGIN_RATIO = 0.14;
 const MAP_FIT_MIN_MARGIN = 0.0025;
 const MAP_FIT_PADDING = 155;
 const MAP_TARGET_ZOOM_PULLBACK = 0.14;
+const TOUCH_REVEAL_DURATION_MS = 1800;
+const EVENT_MODAL_EXIT_DURATION_MS = 220;
 const MARATHON_EVENT_NAME_PATTERN =
   /马拉松|半程|半马|全马|marathon|half\s*marathon/i;
 const HALF_MARATHON_NAME_PATTERN = /半程|半马|half\s*marathon/i;
@@ -154,6 +157,9 @@ const formatDurationShort = (seconds: number) => {
   }
   return `${minutes}m`;
 };
+
+const formatRoundedHours = (seconds: number) =>
+  Math.round(Math.max(0, seconds) / 3600).toString();
 
 const totalDistance = (runs: Activity[]) =>
   runs.reduce((sum, run) => sum + run.distance / M_TO_DIST, 0);
@@ -476,6 +482,86 @@ const viewStatesNearlyEqual = (left: IViewState, right: IViewState) =>
   Math.abs(finiteViewValue(left.zoom, 0) - finiteViewValue(right.zoom, 0)) <
     0.01;
 
+const useTouchRevealAction = (action?: () => void) => {
+  const [isTouchRevealActive, setIsTouchRevealActive] = useState(false);
+  const isTouchRevealActiveRef = useRef(false);
+  const suppressNextClickRef = useRef(false);
+  const touchRevealTimeoutRef = useRef<number | null>(null);
+
+  const clearTouchRevealTimeout = useCallback(() => {
+    if (touchRevealTimeoutRef.current) {
+      window.clearTimeout(touchRevealTimeoutRef.current);
+      touchRevealTimeoutRef.current = null;
+    }
+  }, []);
+
+  const hideTouchReveal = useCallback(() => {
+    clearTouchRevealTimeout();
+    isTouchRevealActiveRef.current = false;
+    setIsTouchRevealActive(false);
+  }, [clearTouchRevealTimeout]);
+
+  const showTouchReveal = useCallback(() => {
+    clearTouchRevealTimeout();
+    isTouchRevealActiveRef.current = true;
+    setIsTouchRevealActive(true);
+    touchRevealTimeoutRef.current = window.setTimeout(
+      hideTouchReveal,
+      TOUCH_REVEAL_DURATION_MS
+    );
+  }, [clearTouchRevealTimeout, hideTouchReveal]);
+
+  useEffect(() => () => clearTouchRevealTimeout(), [clearTouchRevealTimeout]);
+
+  const handlePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (!action || event.pointerType === 'mouse') {
+        return;
+      }
+
+      if (!isTouchRevealActiveRef.current) {
+        showTouchReveal();
+        suppressNextClickRef.current = true;
+        return;
+      }
+
+      suppressNextClickRef.current = true;
+      hideTouchReveal();
+      action();
+    },
+    [action, hideTouchReveal, showTouchReveal]
+  );
+
+  const handleClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      if (!action) {
+        return;
+      }
+
+      if (suppressNextClickRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressNextClickRef.current = false;
+        return;
+      }
+
+      hideTouchReveal();
+      action();
+    },
+    [action, hideTouchReveal]
+  );
+
+  return {
+    isTouchRevealActive,
+    touchRevealHandlers: action
+      ? {
+          onPointerDown: handlePointerDown,
+          onClick: handleClick,
+        }
+      : {},
+  };
+};
+
 const MetricCard = ({
   label,
   value,
@@ -504,16 +590,19 @@ const MetricCard = ({
   overlay?: string;
   className?: string;
 }) => {
+  const { isTouchRevealActive, touchRevealHandlers } =
+    useTouchRevealAction(onClick);
   const cardClassName = [
     styles.metricCard,
     onClick ? styles.metricCardInteractive : '',
+    isTouchRevealActive ? styles.cardTouchRevealActive : '',
     className ?? '',
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <button type="button" className={cardClassName} onClick={onClick}>
+    <button type="button" className={cardClassName} {...touchRevealHandlers}>
       <span className={styles.metricLabel}>{label}</span>
       <span className={styles.metricValue}>
         {value}
@@ -768,6 +857,12 @@ const HomeView = ({
   latestRun: Activity | null;
 }) => {
   const navigate = useNavigate();
+  const openHeatmap = useCallback(() => navigate('/heatmap'), [navigate]);
+  const openEvents = useCallback(() => navigate('/events'), [navigate]);
+  const {
+    isTouchRevealActive: isEventTouchRevealActive,
+    touchRevealHandlers: eventTouchRevealHandlers,
+  } = useTouchRevealAction(openEvents);
   const latestMonth = latestRun ? monthKeyFor(latestRun.start_date_local) : '';
   const [yearFilter, setYearFilter] = useState(thisYear || 'All');
   const [page, setPage] = useState(0);
@@ -1201,7 +1296,7 @@ const HomeView = ({
         details={[`${sortedActivities.length} runs`, formatDurationShort(allSeconds)]}
         stackDetails
         overlay="点击打开热力图"
-        onClick={() => navigate('/heatmap')}
+        onClick={openHeatmap}
       />
       <MetricCard
         label="Yearly Goal"
@@ -1244,8 +1339,10 @@ const HomeView = ({
     <button
       type="button"
       id={id}
-      className={`${styles.panel} ${styles.eventPanel}`}
-      onClick={() => navigate('/events')}
+      className={`${styles.panel} ${styles.eventPanel} ${
+        isEventTouchRevealActive ? styles.cardTouchRevealActive : ''
+      }`}
+      {...eventTouchRevealHandlers}
     >
       <span className={styles.eventCount}>{marathonRuns.length}</span>
       <span className={styles.eventTitle}>
@@ -1458,6 +1555,7 @@ const HomeView = ({
     animationBaseDelay = 0
   ) => {
     const selected = selectedRun?.run_id === run.run_id;
+    const [activityDate, activityTime = ''] = run.start_date_local.split(' ');
 
     return (
       <tr
@@ -1468,7 +1566,10 @@ const HomeView = ({
         }}
         onClick={() => toggleRunSelection(run)}
       >
-        <td>{run.start_date_local}</td>
+        <td className={styles.activityDateCell}>
+          <span>{activityDate}</span>
+          {activityTime && <small>{activityTime}</small>}
+        </td>
         <td>{activityTitleForRun(run)}</td>
         <td>
           {(run.distance / M_TO_DIST).toFixed(2)}
@@ -1660,8 +1761,8 @@ const HeatmapView = ({
               <small>km</small>
             </span>
             <span>
-              <strong>{formatDurationShort(totalStats.seconds)}</strong>
-              <small>time</small>
+              <strong>{formatRoundedHours(totalStats.seconds)}</strong>
+              <small>hours</small>
             </span>
           </div>
         </div>
@@ -1722,6 +1823,8 @@ const HeatmapView = ({
 
 const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
   const [selectedEvent, setSelectedEvent] = useState<Activity | null>(null);
+  const [isEventModalClosing, setIsEventModalClosing] = useState(false);
+  const eventModalExitTimeoutRef = useRef<number | null>(null);
   const eventRuns = useMemo(
     () => sortedActivities.filter(isMarathonEventRun),
     [sortedActivities]
@@ -1777,6 +1880,39 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
     [modalGeoData]
   );
   const ignoreModalViewStateUpdate = useCallback(() => undefined, []);
+  const clearEventModalExitTimeout = useCallback(() => {
+    if (eventModalExitTimeoutRef.current) {
+      window.clearTimeout(eventModalExitTimeoutRef.current);
+      eventModalExitTimeoutRef.current = null;
+    }
+  }, []);
+  const openEventModal = useCallback(
+    (run: Activity) => {
+      clearEventModalExitTimeout();
+      setIsEventModalClosing(false);
+      setSelectedEvent(run);
+    },
+    [clearEventModalExitTimeout]
+  );
+  const closeEventModal = useCallback(() => {
+    if (!selectedEvent || isEventModalClosing) {
+      return;
+    }
+
+    setIsEventModalClosing(true);
+    eventModalExitTimeoutRef.current = window.setTimeout(() => {
+      setSelectedEvent(null);
+      setIsEventModalClosing(false);
+      eventModalExitTimeoutRef.current = null;
+    }, EVENT_MODAL_EXIT_DURATION_MS);
+  }, [isEventModalClosing, selectedEvent]);
+
+  useEffect(
+    () => () => {
+      clearEventModalExitTimeout();
+    },
+    [clearEventModalExitTimeout]
+  );
 
   return (
     <main className={`${styles.main} ${styles.eventsMain}`}>
@@ -1799,7 +1935,7 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
                       className={`${styles.eventCard} ${
                         pbLabel ? styles.eventCardPb : ''
                       }`}
-                      onClick={() => setSelectedEvent(run)}
+                      onClick={() => openEventModal(run)}
                     >
                       <EventRouteBackground run={run} />
                       {pbLabel && (
@@ -1825,11 +1961,15 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
       {selectedEvent && (
         <button
           type="button"
-          className={styles.modalBackdrop}
-          onClick={() => setSelectedEvent(null)}
+          className={`${styles.modalBackdrop} ${
+            isEventModalClosing ? styles.modalBackdropClosing : ''
+          }`}
+          onClick={closeEventModal}
         >
           <span
-            className={styles.eventModal}
+            className={`${styles.eventModal} ${
+              isEventModalClosing ? styles.eventModalClosing : ''
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
             <small>{selectedEvent.start_date_local.slice(0, 10)}</small>
