@@ -194,7 +194,6 @@
 .panel,
 .metricCard,
 .heatmapPageHeader,
-.eventsHero,
 .eventYearGroup {
   animation: moduleFadeIn 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -253,10 +252,6 @@
 
 .heatmapYearList .heatmapYearBlock:nth-child(n + 4) {
   animation-delay: 310ms;
-}
-
-.eventsHero {
-  animation-delay: 40ms;
 }
 
 .eventYearGroup {
@@ -327,7 +322,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.62);
   color: #fff;
   font-size: 13px;
   font-weight: 900;
@@ -1145,30 +1139,6 @@
   white-space: nowrap;
 }
 
-.segmented {
-  border: 1px solid #27272a;
-  border-radius: 14px;
-  padding: 4px;
-  background: #18181b;
-  display: flex;
-}
-
-.segmented button {
-  flex: 1;
-  border: 0;
-  border-radius: 10px;
-  padding: 10px;
-  background: transparent;
-  color: #a1a1aa;
-  font: inherit;
-  font-weight: 800;
-}
-
-.segmented .segmentActive {
-  background: #27272a;
-  color: #fff;
-}
-
 .heatStats {
   display: flex;
   gap: 16px;
@@ -1301,16 +1271,6 @@
   font-weight: 900;
 }
 
-.heatWeekdays {
-  margin-top: 24px;
-  display: grid;
-  grid-template-rows: repeat(7, 14px);
-  gap: 4px;
-  color: #71717a;
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-
 .yearHeatmap {
   width: 100%;
   padding: 2px 0;
@@ -1324,7 +1284,7 @@
 .heatCell {
   width: 100%;
   height: 100%;
-  border-radius: 3px;
+  border-radius: 22%;
   transition:
     box-shadow 0.15s ease,
     transform 0.15s ease;
@@ -1363,56 +1323,6 @@
   max-width: none;
   padding-left: 0;
   padding-right: 0;
-}
-
-.eventsHero {
-  position: relative;
-  overflow: hidden;
-  padding: 70px 24px 90px;
-  text-align: center;
-}
-
-.eventsHero::before {
-  content: '';
-  position: absolute;
-  top: -220px;
-  left: 50%;
-  width: 960px;
-  height: 430px;
-  border-radius: 50%;
-  background: rgba(227, 25, 55, 0.2);
-  filter: blur(220px);
-  transform: translateX(-50%);
-}
-
-.eventsHero h1,
-.eventsHero p {
-  position: relative;
-  z-index: 1;
-}
-
-.eventsHero h1 {
-  margin: 0;
-  font-size: 78px;
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: 0;
-}
-
-.eventsHero h1 span {
-  display: block;
-  color: #fff;
-}
-
-.eventsHero h1 {
-  color: #e31937;
-}
-
-.eventsHero p {
-  margin: 22px auto 0;
-  max-width: 620px;
-  color: #a1a1aa;
-  font-size: 18px;
 }
 
 .eventGroups {
@@ -1595,7 +1505,6 @@
   animation: modalBackdropOut 0.22s ease forwards;
 }
 
-.monthModal,
 .eventModal {
   border: 1px solid #27272a;
   border-radius: 24px;
@@ -1604,15 +1513,6 @@
   cursor: default;
 }
 
-.monthModal {
-  width: min(100%, 360px);
-  padding: 28px;
-  text-align: left;
-  display: grid;
-  gap: 10px;
-}
-
-.monthModal small,
 .eventModal small {
   color: #71717a;
   font-size: 12px;
@@ -1621,14 +1521,12 @@
   text-transform: uppercase;
 }
 
-.monthModal strong,
 .eventModal strong {
   color: #fff;
   font-size: 30px;
   font-weight: 900;
 }
 
-.monthModal span,
 .eventModal span {
   color: #d4d4d8;
   font-family: var(--font-mono);
@@ -1712,7 +1610,6 @@
   .panel,
   .metricCard,
   .heatmapPageHeader,
-  .eventsHero,
   .eventYearGroup,
   .eventCard,
   .activityRow,
@@ -1927,51 +1824,6 @@
     font-size: 11px;
   }
 
-  .activityTable th:nth-child(1),
-  .activityTable td:nth-child(1) {
-    width: 20.7%;
-  }
-
-  .activityTable th:nth-child(2),
-  .activityTable td:nth-child(2) {
-    width: 18.7%;
-  }
-
-  .activityTable th:nth-child(1),
-  .activityTable td:nth-child(1) {
-    padding-left: var(--activity-edge-pad);
-    padding-right: var(--activity-date-gap);
-    text-align: left;
-  }
-
-  .activityTable th:nth-child(2),
-  .activityTable td:nth-child(2) {
-    padding-left: var(--activity-name-gap);
-    padding-right: var(--activity-cell-x);
-  }
-
-  .activityTable th:nth-child(3),
-  .activityTable td:nth-child(3) {
-    width: 18.7%;
-  }
-
-  .activityTable th:nth-child(4),
-  .activityTable td:nth-child(4) {
-    width: 19.7%;
-  }
-
-  .activityTable th:nth-child(5),
-  .activityTable td:nth-child(5) {
-    width: 15.7%;
-  }
-
-  .activityTable th:nth-child(6),
-  .activityTable td:nth-child(6) {
-    width: 6.5%;
-    padding-right: var(--activity-edge-pad);
-    text-align: right;
-  }
-
   .activityTable td span {
     margin-left: 2px;
     font-size: 11px;
@@ -2035,13 +1887,8 @@
   }
 
   .eventYearHeader,
-  .heatmapPageHeader,
-  .heatmapYearHeader {
+  .heatmapPageHeader {
     flex-direction: column;
-  }
-
-  .eventsHero h1 {
-    font-size: 48px;
   }
 
   .eventYearHeader strong {
@@ -2067,6 +1914,10 @@
 }
 
 @media (max-width: 700px) {
+  .yearHeatmap {
+    gap: 2px;
+  }
+
   .heatmapYearHeader {
     grid-template-columns: auto minmax(0, 1fr);
     gap: 8px;

@@ -32,7 +32,6 @@ import {
   pathForRun,
   sortDateFunc,
   titleForRun,
-  titleForShow,
   IViewState,
 } from '@/utils/utils';
 import { RPGeometry } from '@/static/run_countries';
@@ -523,19 +522,15 @@ const getEventModalViewState = (
     [Math.min(...pointsLong), Math.min(...pointsLat)],
     [Math.max(...pointsLong), Math.max(...pointsLat)],
   ];
-  const isCompactModalMap = viewport.width < 560;
-  const isNarrowModalMap = viewport.width < 420;
-  const fitPadding = isNarrowModalMap ? 24 : isCompactModalMap ? 26 : 26;
-  const zoomPullback = 0;
   const viewState = new WebMercatorViewport(viewport).fitBounds(
     cornersLongLat,
-    { padding: fitPadding }
+    { padding: viewport.width < 420 ? 24 : 26 }
   );
 
   return {
     longitude: viewState.longitude,
     latitude: viewState.latitude,
-    zoom: Math.max(1, Math.min(viewState.zoom - zoomPullback, 16)),
+    zoom: Math.max(1, Math.min(viewState.zoom, 16)),
   };
 };
 
@@ -879,6 +874,10 @@ const PageShell = ({
     activeNavIndex,
     indicatorTravelSteps
   );
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
 
   useEffect(() => {
     previousNavIndexRef.current = activeNavIndex;
@@ -1442,15 +1441,10 @@ const HomeView = ({
   ) => (
     <section id={id} className={className}>
       <RunMap
-        title={selectedRun ? titleForShow(selectedRun) : yearFilter}
         viewState={viewState}
         geoData={selectedGeoData}
         setViewState={setMapViewState}
-        changeYear={() => undefined}
-        thisYear={thisYear}
         height={height}
-        showYearButtons={false}
-        showTitle={false}
         onReady={handleMapReady}
       />
     </section>
@@ -2123,15 +2117,10 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
             </span>
             <span className={styles.eventModalMap}>
               <RunMap
-                title={titleForShow(selectedEvent)}
                 viewState={modalViewState}
                 geoData={modalGeoData}
                 setViewState={ignoreModalViewStateUpdate}
-                changeYear={() => undefined}
-                thisYear={selectedEvent.start_date_local.slice(0, 4)}
                 height={EVENT_MODAL_MAP_HEIGHT}
-                showYearButtons={false}
-                showTitle={false}
                 animateCamera={false}
               />
             </span>

@@ -1,14 +1,11 @@
 import * as mapboxPolyline from '@mapbox/polyline';
 import gcoord from 'gcoord';
-import { WebMercatorViewport } from '@math.gl/web-mercator';
 import { RPGeometry } from '@/static/run_countries';
 import { chinaCities } from '@/static/city';
 import {
   MUNICIPALITY_CITIES_ARR,
   NEED_FIX_MAP,
   RUN_TITLES,
-  ACTIVITY_TYPES,
-  RICH_TITLE,
   SINGLE_RUN_COLOR_DARK,
   MAP_TILE_STYLES,
 } from './const';
@@ -20,8 +17,6 @@ import type {
 } from '@/types/geojson';
 
 export type Coordinate = [number, number];
-
-export type RunIds = Array<number> | [];
 
 // Check for units environment variable
 const IS_IMPERIAL = import.meta.env.VITE_USE_IMPERIAL === 'true';
@@ -47,21 +42,6 @@ export interface Activity {
   streak: number;
 }
 
-const titleForShow = (run: Activity): string => {
-  const date = run.start_date_local.slice(0, 11);
-  const distance = (run.distance / M_TO_DIST).toFixed(2);
-  let name = 'Run';
-  if (run.name.slice(0, 7) === 'Running') {
-    name = 'run';
-  }
-  if (run.name) {
-    name = run.name;
-  }
-  return `${name} ${date} ${distance} ${DIST_UNIT} ${
-    !run.summary_polyline ? '(No map data for this run)' : ''
-  }`;
-};
-
 const formatPace = (d: number): string => {
   if (Number.isNaN(d)) return '0';
   const pace = (M_TO_DIST / 60.0) * (1.0 / d);
@@ -81,24 +61,6 @@ const convertMovingTime2Sec = (moving_time: string): number => {
   const [hours, minutes, seconds] = time.split(':').map(Number);
   const totalSeconds = ((days * 24 + hours) * 60 + minutes) * 60 + seconds;
   return totalSeconds;
-};
-
-const formatRunTime = (moving_time: string): string => {
-  const totalSeconds = convertMovingTime2Sec(moving_time);
-  const seconds = totalSeconds % 60;
-  const minutes = (totalSeconds - seconds) / 60;
-  if (minutes === 0) {
-    return seconds + 's';
-  }
-  return minutes + 'min';
-};
-
-// for scroll to the map
-const scrollToMap = () => {
-  const mapContainer = document.getElementById('map-container');
-  if (mapContainer) {
-    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 };
 
 const extractCities = (str: string): string[] => {
@@ -198,13 +160,6 @@ const locationForRun = (
   return r;
 };
 
-const intComma = (x = '') => {
-  if (x.toString().length <= 5) {
-    return x;
-  }
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-};
-
 const pathForRun = (run: Activity): Coordinate[] => {
   try {
     if (!run.summary_polyline) {
@@ -230,19 +185,14 @@ const pathForRun = (run: Activity): Coordinate[] => {
   }
 };
 
-const colorForRun = (run: Activity): string => {
-  return run.type === 'Run' ? SINGLE_RUN_COLOR_DARK : SINGLE_RUN_COLOR_DARK;
-};
-
 const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
   type: 'FeatureCollection',
   features: runs.map((run) => {
     const points = pathForRun(run);
-    const color = colorForRun(run);
     return {
       type: 'Feature',
       properties: {
-        color: color,
+        color: SINGLE_RUN_COLOR_DARK,
         indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
       },
       geometry: {
@@ -268,48 +218,7 @@ const geoJsonForMap = async (): Promise<FeatureCollection<RPGeometry>> => {
   };
 };
 
-const getActivitySport = (act: Activity): string => {
-  if (act.type === 'Run') {
-    if (act.subtype === 'generic') {
-      const runDistance = act.distance / 1000;
-      if (runDistance > 20 && runDistance < 40) {
-        return RUN_TITLES.HALF_MARATHON_RUN_TITLE;
-      } else if (runDistance >= 40) {
-        return RUN_TITLES.FULL_MARATHON_RUN_TITLE;
-      }
-      return ACTIVITY_TYPES.RUN_GENERIC_TITLE;
-    } else if (act.subtype === 'trail') return ACTIVITY_TYPES.RUN_TRAIL_TITLE;
-    else if (act.subtype === 'treadmill')
-      return ACTIVITY_TYPES.RUN_TREADMILL_TITLE;
-    else return ACTIVITY_TYPES.RUN_GENERIC_TITLE;
-  } else if (act.type === 'hiking') {
-    return ACTIVITY_TYPES.HIKING_TITLE;
-  } else if (act.type === 'cycling') {
-    return ACTIVITY_TYPES.CYCLING_TITLE;
-  } else if (act.type === 'walking') {
-    return ACTIVITY_TYPES.WALKING_TITLE;
-  }
-  // if act.type contains 'skiing'
-  else if (act.type.includes('skiing')) {
-    return ACTIVITY_TYPES.SKIING_TITLE;
-  }
-  return '';
-};
-
 const titleForRun = (run: Activity): string => {
-  if (RICH_TITLE) {
-    // 1. try to use user defined name
-    if (run.name != '') {
-      return run.name;
-    }
-    // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
-    const { city } = locationForRun(run);
-    const activity_sport = getActivitySport(run);
-    if (city && city.length > 0 && activity_sport.length > 0) {
-      return `${city} ${activity_sport}`;
-    }
-  }
-  // 3. use time+length if location or type is not available
   const runDistance = run.distance / 1000;
   const runHour = +run.start_date_local.slice(11, 13);
   if (runDistance > 20 && runDistance < 40) {
@@ -339,78 +248,12 @@ export interface IViewState {
   zoom?: number;
 }
 
-const getBoundsForGeoData = (
-  geoData: FeatureCollection<LineString>
-): IViewState => {
-  const { features } = geoData;
-  let points: Coordinate[] = [];
-  // find first have data
-  for (const f of features) {
-    if (f.geometry.coordinates.length) {
-      points = f.geometry.coordinates as Coordinate[];
-      break;
-    }
-  }
-  if (points.length === 0) {
-    return { longitude: 20, latitude: 20, zoom: 3 };
-  }
-  if (points.length === 2 && String(points[0]) === String(points[1])) {
-    return { longitude: points[0][0], latitude: points[0][1], zoom: 9 };
-  }
-  // Calculate corner values of bounds
-  const pointsLong = points.map((point) => point[0]) as number[];
-  const pointsLat = points.map((point) => point[1]) as number[];
-  const cornersLongLat: [Coordinate, Coordinate] = [
-    [Math.min(...pointsLong), Math.min(...pointsLat)],
-    [Math.max(...pointsLong), Math.max(...pointsLat)],
-  ];
-  const viewState = new WebMercatorViewport({
-    width: 800,
-    height: 600,
-  }).fitBounds(cornersLongLat, { padding: 200 });
-  let { longitude, latitude, zoom } = viewState;
-  if (features.length > 1) {
-    zoom = 11.5;
-  }
-  return { longitude, latitude, zoom };
-};
-
-const filterYearRuns = (run: Activity, year: string) => {
-  if (run && run.start_date_local) {
-    return run.start_date_local.slice(0, 4) === year;
-  }
-  return false;
-};
-
-const filterCityRuns = (run: Activity, city: string) => {
-  if (run && run.location_country) {
-    return run.location_country.includes(city);
-  }
-  return false;
-};
-const filterTitleRuns = (run: Activity, title: string) =>
-  titleForRun(run) === title;
-
-const filterAndSortRuns = (
-  activities: Activity[],
-  item: string,
-  filterFunc: (_run: Activity, _bvalue: string) => boolean,
-  sortFunc: (_a: Activity, _b: Activity) => number
-) => {
-  let s = activities;
-  if (item !== 'Total') {
-    s = activities.filter((run) => filterFunc(run, item));
-  }
-  return s.sort(sortFunc);
-};
-
 const sortDateFunc = (a: Activity, b: Activity) => {
   return (
     new Date(b.start_date_local.replace(' ', 'T')).getTime() -
     new Date(a.start_date_local.replace(' ', 'T')).getTime()
   );
 };
-const sortDateFuncReverse = (a: Activity, b: Activity) => sortDateFunc(b, a);
 
 const getMapStyle = (vendor: string, styleName: string, token: string) => {
   const style = (MAP_TILE_STYLES as any)[vendor][styleName];
@@ -424,23 +267,13 @@ const getMapStyle = (vendor: string, styleName: string, token: string) => {
 };
 
 export {
-  titleForShow,
   formatPace,
-  scrollToMap,
   locationForRun,
-  intComma,
   pathForRun,
   geoJsonForRuns,
   geoJsonForMap,
   titleForRun,
-  filterYearRuns,
-  filterCityRuns,
-  filterTitleRuns,
-  filterAndSortRuns,
   sortDateFunc,
-  sortDateFuncReverse,
-  getBoundsForGeoData,
-  formatRunTime,
   convertMovingTime2Sec,
   getMapStyle,
 };

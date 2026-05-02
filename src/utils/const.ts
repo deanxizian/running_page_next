@@ -9,20 +9,6 @@ const MUNICIPALITY_CITIES_ARR = [
   '香港特别行政区',
   '澳门特别行政区',
 ];
-const MAP_LAYER_LIST = [
-  'road-label',
-  'waterway-label',
-  'natural-line-label',
-  'natural-point-label',
-  'water-line-label',
-  'water-point-label',
-  'poi-label',
-  'airport-label',
-  'settlement-subdivision-label',
-  'settlement-label',
-  'state-label',
-  'country-label',
-];
 
 // styling: set to `true` if you want dash-line route
 const USE_DASH_LINE = false;
@@ -33,27 +19,9 @@ const LINE_OPACITY = 0.4;
 const MAP_HEIGHT = window.innerWidth <= 768 ? 250 : 600;
 //set to `false` if you want to hide the road label characters
 const ROAD_LABEL_DISPLAY = true;
-//set to `true` if you want to show the 'Elevation Gain' column
-const SHOW_ELEVATION_GAIN = false;
-// richer title for the activity types
-const RICH_TITLE = false;
 
 // IF you are outside China please make sure IS_CHINESE = false
 const IS_CHINESE = true;
-const USE_ANIMATION_FOR_GRID = false;
-const CHINESE_INFO_MESSAGE = (yearLength: number, year: string): string => {
-  const yearStr = year === 'Total' ? '所有' : ` ${year} `;
-  return `记录自己跑步 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
-};
-const ENGLISH_INFO_MESSAGE = (yearLength: number, year: string): string =>
-  `Running Journey with ${yearLength} Years, the table shows year ${year} data`;
-
-// English is not supported for location info messages yet
-const CHINESE_LOCATION_INFO_MESSAGE_FIRST =
-  '跑过了一些地方，希望随着时间推移，点亮的地方越来越多';
-const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下奔跑的脚步';
-
-const INFO_MESSAGE = IS_CHINESE ? CHINESE_INFO_MESSAGE : ENGLISH_INFO_MESSAGE;
 const FULL_MARATHON_RUN_TITLE = IS_CHINESE ? '全程马拉松' : 'Full Marathon';
 const HALF_MARATHON_RUN_TITLE = IS_CHINESE ? '半程马拉松' : 'Half Marathon';
 const MORNING_RUN_TITLE = IS_CHINESE ? '清晨跑步' : 'Morning Run';
@@ -61,48 +29,6 @@ const MIDDAY_RUN_TITLE = IS_CHINESE ? '午间跑步' : 'Midday Run';
 const AFTERNOON_RUN_TITLE = IS_CHINESE ? '午后跑步' : 'Afternoon Run';
 const EVENING_RUN_TITLE = IS_CHINESE ? '傍晚跑步' : 'Evening Run';
 const NIGHT_RUN_TITLE = IS_CHINESE ? '夜晚跑步' : 'Night Run';
-const RUN_GENERIC_TITLE = IS_CHINESE ? '跑步' : 'Run';
-const RUN_TRAIL_TITLE = IS_CHINESE ? '越野跑' : 'Trail Run';
-const RUN_TREADMILL_TITLE = IS_CHINESE ? '跑步机' : 'Treadmill Run';
-const HIKING_TITLE = IS_CHINESE ? '徒步' : 'Hiking';
-const CYCLING_TITLE = IS_CHINESE ? '骑行' : 'Cycling';
-const SKIING_TITLE = IS_CHINESE ? '滑雪' : 'Skiing';
-const WALKING_TITLE = IS_CHINESE ? '步行' : 'Walking';
-const SWIMMING_TITLE = IS_CHINESE ? '游泳' : 'Swimming';
-const ALL_TITLE = IS_CHINESE ? '所有' : 'All';
-const ACTIVITY_COUNT_TITLE = IS_CHINESE ? '活动次数' : 'Activity Count';
-const MAX_DISTANCE_TITLE = IS_CHINESE ? '最远距离' : 'Max Distance';
-const MAX_SPEED_TITLE = IS_CHINESE ? '最快速度' : 'Max Speed';
-const TOTAL_TIME_TITLE = IS_CHINESE ? '总时间' : 'Total Time';
-const AVERAGE_SPEED_TITLE = IS_CHINESE ? '平均速度' : 'Average Speed';
-const TOTAL_DISTANCE_TITLE = IS_CHINESE ? '总距离' : 'Total Distance';
-const AVERAGE_DISTANCE_TITLE = IS_CHINESE ? '平均距离' : 'Average Distance';
-const TOTAL_ELEVATION_GAIN_TITLE = IS_CHINESE
-  ? '总海拔爬升'
-  : 'Total Elevation Gain';
-const AVERAGE_HEART_RATE_TITLE = IS_CHINESE ? '平均心率' : 'Average Heart Rate';
-const YEARLY_TITLE = IS_CHINESE ? 'Year' : 'Yearly';
-const MONTHLY_TITLE = IS_CHINESE ? 'Month' : 'Monthly';
-const WEEKLY_TITLE = IS_CHINESE ? 'Week' : 'Weekly';
-const DAILY_TITLE = IS_CHINESE ? 'Day' : 'Daily';
-const LOCATION_TITLE = IS_CHINESE ? 'Location' : 'Location';
-const HOME_PAGE_TITLE = IS_CHINESE ? '首页' : 'Home';
-
-const LOADING_TEXT = IS_CHINESE ? '加载中...' : 'Loading...';
-const NO_ROUTE_DATA = IS_CHINESE ? '暂无路线数据' : 'No route data';
-const INVALID_ROUTE_DATA = IS_CHINESE ? '路线数据无效' : 'Invalid route data';
-
-const ACTIVITY_TYPES = {
-  RUN_GENERIC_TITLE,
-  RUN_TRAIL_TITLE,
-  RUN_TREADMILL_TITLE,
-  HIKING_TITLE,
-  CYCLING_TITLE,
-  SKIING_TITLE,
-  WALKING_TITLE,
-  SWIMMING_TITLE,
-  ALL_TITLE,
-};
 
 const RUN_TITLES = {
   FULL_MARATHON_RUN_TITLE,
@@ -113,45 +39,16 @@ const RUN_TITLES = {
   EVENING_RUN_TITLE,
   NIGHT_RUN_TITLE,
 };
-const ACTIVITY_TOTAL = {
-  ACTIVITY_COUNT_TITLE,
-  MAX_DISTANCE_TITLE,
-  MAX_SPEED_TITLE,
-  TOTAL_TIME_TITLE,
-  AVERAGE_SPEED_TITLE,
-  TOTAL_DISTANCE_TITLE,
-  AVERAGE_DISTANCE_TITLE,
-  TOTAL_ELEVATION_GAIN_TITLE,
-  AVERAGE_HEART_RATE_TITLE,
-  YEARLY_TITLE,
-  MONTHLY_TITLE,
-  WEEKLY_TITLE,
-  DAILY_TITLE,
-  LOCATION_TITLE,
-};
 
 export {
-  CHINESE_LOCATION_INFO_MESSAGE_FIRST,
-  CHINESE_LOCATION_INFO_MESSAGE_SECOND,
   MAPBOX_TOKEN,
   MUNICIPALITY_CITIES_ARR,
-  MAP_LAYER_LIST,
   IS_CHINESE,
   ROAD_LABEL_DISPLAY,
-  INFO_MESSAGE,
   RUN_TITLES,
-  USE_ANIMATION_FOR_GRID,
   USE_DASH_LINE,
   LINE_OPACITY,
   MAP_HEIGHT,
-  SHOW_ELEVATION_GAIN,
-  RICH_TITLE,
-  ACTIVITY_TYPES,
-  ACTIVITY_TOTAL,
-  HOME_PAGE_TITLE,
-  LOADING_TEXT,
-  NO_ROUTE_DATA,
-  INVALID_ROUTE_DATA,
 };
 
 const primary = 'rgb(224,237,94)';
@@ -165,19 +62,11 @@ export const PROVINCE_FILL_COLOR = '#E31937';
 export const COUNTRY_FILL_COLOR = dark_vanilla;
 
 export const SINGLE_RUN_COLOR_DARK = '#E31937';
-export const RUN_TRAIL_COLOR = 'rgb(255,153,51)';
-export const CYCLING_COLOR = 'rgb(51,255,87)';
-export const HIKING_COLOR = 'rgb(151,51,255)';
-export const WALKING_COLOR = HIKING_COLOR;
-export const SWIMMING_COLOR = 'rgb(255,51,51)';
-export const INDOOR_COLOR = '#8899aa';
 
 // map tiles vendor, maptiler or mapbox or stadiamaps
 // if you want to use maptiler, set the access token in MAP_TILE_ACCESS_TOKEN
 export const MAP_TILE_VENDOR = 'mapcn';
 
-// map tiles style name, see MAP_TILE_STYLES for more details
-export const MAP_TILE_STYLE_LIGHT = 'osm-bright';
 export const MAP_TILE_STYLE_DARK = 'dark-matter';
 
 // access token. you can apply a new one, it's free.
@@ -276,9 +165,9 @@ if (typeof window !== 'undefined') {
 
   // Validate style matches vendor
   const vendorStyles = (MAP_TILE_STYLES as any)[MAP_TILE_VENDOR];
-  if (vendorStyles && !vendorStyles[MAP_TILE_STYLE_LIGHT]) {
+  if (vendorStyles && !vendorStyles[MAP_TILE_STYLE_DARK]) {
     console.error(
-      `❌ Style "${MAP_TILE_STYLE_LIGHT}" is not valid for vendor "${MAP_TILE_VENDOR}"\n` +
+      `❌ Style "${MAP_TILE_STYLE_DARK}" is not valid for vendor "${MAP_TILE_VENDOR}"\n` +
         `💡 Available styles: ${Object.keys(vendorStyles).join(', ')}\n` +
         `📚 Check src/utils/const.ts MAP_TILE_STYLES for valid combinations`
     );
@@ -288,7 +177,7 @@ if (typeof window !== 'undefined') {
   if (
     MAP_TILE_VENDOR === 'mapcn' &&
     MAP_TILE_ACCESS_TOKEN === '' &&
-    vendorStyles?.[MAP_TILE_STYLE_LIGHT]
+    vendorStyles?.[MAP_TILE_STYLE_DARK]
   ) {
     console.info(
       '✅ Using MapCN (Carto Basemaps) - Free, no token required!\n' +

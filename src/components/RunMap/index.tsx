@@ -31,22 +31,16 @@ import {
   geoJsonForMap,
   getMapStyle,
 } from '@/utils/utils';
-import RunMapButtons from './RunMapButtons';
 import styles from './style.module.css';
 import type { FeatureCollection } from '@/types/geojson';
 import { RPGeometry } from '@/static/run_countries';
 import './mapbox.css';
 
 interface IRunMapProps {
-  title: string;
   viewState: IViewState;
   setViewState: (_viewState: IViewState) => void;
-  changeYear: (_year: string) => void;
   geoData: FeatureCollection<RPGeometry>;
-  thisYear: string;
   height?: number | string;
-  showYearButtons?: boolean;
-  showTitle?: boolean;
   onReady?: () => void;
   animateCamera?: boolean;
 }
@@ -182,15 +176,10 @@ const softenMapBaseLayers = (map: MapInstance) => {
 };
 
 const RunMap = ({
-  title,
   viewState,
   setViewState,
-  changeYear,
   geoData,
-  thisYear,
   height,
-  showYearButtons = true,
-  showTitle = true,
   onReady,
   animateCamera = true,
 }: IRunMapProps) => {
@@ -591,9 +580,6 @@ const RunMap = ({
           </a>
         </div>
       )}
-      {showYearButtons && (
-        <RunMapButtons changeYear={changeYear} thisYear={thisYear} />
-      )}
       <Source id="data" type="geojson" data={combinedGeoData}>
         <Layer
           id="province"
@@ -667,7 +653,6 @@ const RunMap = ({
           filter={['==', ['get', 'indoor'], true]}
         />
       </Source>
-      {showTitle && <span className={styles.runTitle}>{title}</span>}
     </Map>
   );
 };
