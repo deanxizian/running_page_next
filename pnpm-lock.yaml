@@ -14,9 +14,6 @@ dependencies:
   '@surbowl/world-geo-json-zh':
     specifier: ^2.1.5
     version: 2.1.5
-  gcoord:
-    specifier: ^0.3.2
-    version: 0.3.2
   mapbox-gl:
     specifier: ^2.15.0
     version: 2.15.0
@@ -1120,10 +1117,6 @@ packages:
 
   /function-bind@1.1.1:
     resolution: {integrity: sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==}
-    dev: false
-
-  /gcoord@0.3.2:
-    resolution: {integrity: sha512-LwhA+ev6fBXadAFprI+Q593TTC1QYa0Quewd3YUT51wQS2S6gekrC1YCQlJhKA8HpqCF+dX+fBcX/lkYM5Kgog==}
     dev: false
 
   /gensync@1.0.0-beta.2:

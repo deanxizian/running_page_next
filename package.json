@@ -8,7 +8,6 @@
     "@mapbox/polyline": "^1.2.0",
     "@math.gl/web-mercator": "^4.1.0",
     "@surbowl/world-geo-json-zh": "^2.1.5",
-    "gcoord": "^0.3.2",
     "mapbox-gl": "^2.15.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

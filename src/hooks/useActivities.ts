@@ -1,16 +1,28 @@
 import { useMemo } from 'react';
-import { locationForRun, titleForRun } from '@/utils/utils';
-import activities from '@/static/activities.json';
+import type { Activity } from '@/utils/utils';
+import { locationForRun, sortDateFunc } from '@/utils/utils';
+import rawActivities from '@/static/activities.json';
 import { COUNTRY_STANDARDIZATION } from '@/static/city';
 
+const activities = rawActivities as Activity[];
+
+export type ActivityGroups = {
+  byDate: Map<string, Activity[]>;
+  byMonth: Map<string, Activity[]>;
+  byYear: Map<string, Activity[]>;
+};
+
 type ProcessedActivities = {
-  activities: typeof activities;
+  activities: Activity[];
+  sortedActivities: Activity[];
+  activityGroups: ActivityGroups;
   years: string[];
   countries: string[];
   provinces: string[];
-  cities: Record<string, number>;
-  runPeriod: Record<string, number>;
   thisYear: string;
+  latestRun: Activity | null;
+  latestMonth: string;
+  earliestMonth: string;
 };
 
 let processedActivitiesCache: ProcessedActivities | null = null;
@@ -24,28 +36,34 @@ const standardizeCountryName = (country: string): string => {
   return country;
 };
 
+const groupActivities = (runs: Activity[]): ActivityGroups => {
+  const byDate = new Map<string, Activity[]>();
+  const byMonth = new Map<string, Activity[]>();
+  const byYear = new Map<string, Activity[]>();
+
+  runs.forEach((run) => {
+    const date = run.start_date_local.slice(0, 10);
+    const month = run.start_date_local.slice(0, 7);
+    const year = run.start_date_local.slice(0, 4);
+
+    byDate.set(date, [...(byDate.get(date) ?? []), run]);
+    byMonth.set(month, [...(byMonth.get(month) ?? []), run]);
+    byYear.set(year, [...(byYear.get(year) ?? []), run]);
+  });
+
+  return { byDate, byMonth, byYear };
+};
+
 const buildProcessedActivities = (): ProcessedActivities => {
-  const cities: Record<string, number> = {};
-  const runPeriod: Record<string, number> = {};
   const provinces: Set<string> = new Set();
   const countries: Set<string> = new Set();
   const years: Set<string> = new Set();
+  const sortedActivities = activities.slice().sort(sortDateFunc);
+  const activityGroups = groupActivities(sortedActivities);
 
-  activities.forEach((run) => {
+  sortedActivities.forEach((run) => {
     const location = locationForRun(run);
-
-    const periodName = titleForRun(run);
-    if (periodName) {
-      runPeriod[periodName] = runPeriod[periodName]
-        ? runPeriod[periodName] + 1
-        : 1;
-    }
-
-    const { city, province, country } = location;
-    // drop only one char city
-    if (city.length > 1) {
-      cities[city] = cities[city] ? cities[city] + run.distance : run.distance;
-    }
+    const { province, country } = location;
     if (province) provinces.add(province);
     if (country) countries.add(standardizeCountryName(country));
     const year = run.start_date_local.slice(0, 4);
@@ -53,15 +71,21 @@ const buildProcessedActivities = (): ProcessedActivities => {
   });
 
   const yearsArray = [...years].sort().reverse();
+  const latestRun = sortedActivities[0] ?? null;
 
   return {
     activities,
+    sortedActivities,
+    activityGroups,
     years: yearsArray,
     countries: [...countries],
     provinces: [...provinces],
-    cities,
-    runPeriod,
     thisYear: yearsArray[0] || '',
+    latestRun,
+    latestMonth: latestRun ? latestRun.start_date_local.slice(0, 7) : '',
+    earliestMonth: sortedActivities.length
+      ? sortedActivities[sortedActivities.length - 1].start_date_local.slice(0, 7)
+      : '',
   };
 };
 

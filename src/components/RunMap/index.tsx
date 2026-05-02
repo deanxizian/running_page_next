@@ -10,26 +10,20 @@ import Map, {
   Source,
   MapRef,
 } from 'react-map-gl';
-import { MapInstance } from 'react-map-gl/src/types/lib';
+import type { MapInstance } from 'react-map-gl/src/types/lib';
 import useActivities from '@/hooks/useActivities';
 import {
   IS_CHINESE,
-  ROAD_LABEL_DISPLAY,
   MAPBOX_TOKEN,
   PROVINCE_FILL_COLOR,
   COUNTRY_FILL_COLOR,
-  USE_DASH_LINE,
   LINE_OPACITY,
-  MAP_HEIGHT,
-  MAP_TILE_VENDOR,
-  MAP_TILE_ACCESS_TOKEN,
-  MAP_TILE_STYLE_DARK,
+  MAP_STYLE_URL,
   SINGLE_RUN_COLOR_DARK,
 } from '@/utils/const';
 import {
   IViewState,
   geoJsonForMap,
-  getMapStyle,
 } from '@/utils/utils';
 import styles from './style.module.css';
 import type { FeatureCollection } from '@/types/geojson';
@@ -52,6 +46,7 @@ const RUNNING_LAYER_IDS = new Set([
   'runs2-indoor',
 ]);
 const ROUTE_LAYER_IDS = new Set(['runs2', 'runs2-indoor']);
+const DEFAULT_MAP_HEIGHT = 600;
 
 type MapStyleLayer = {
   id: string;
@@ -208,17 +203,12 @@ const RunMap = ({
   const mapRef = useRef<MapRef>(null);
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
+  const mapDataListenerCleanupRef = useRef<(() => void) | null>(null);
   const hasNotifiedReadyRef = useRef(false);
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
   const [isLoadingMapData, setIsLoadingMapData] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
-
-  const mapStyle = useMemo(
-    () =>
-      getMapStyle(MAP_TILE_VENDOR, MAP_TILE_STYLE_DARK, MAP_TILE_ACCESS_TOKEN),
-    []
-  );
 
   useEffect(() => {
     if (mapRef.current) {
@@ -228,34 +218,18 @@ const RunMap = ({
       let tileErrorCount = 0;
       const MAX_TILE_ERRORS = 10;
 
-      const handleStyleError = (e: any) => {
-        console.error('❌ Map style failed to load:', e);
+      const handleStyleError = () => {
         setMapError(
           'Map tiles failed to load. Please check your internet connection.'
         );
-
-        if (MAP_TILE_VENDOR === 'mapcn') {
-          console.warn('⚠️ Carto Basemaps (MapCN) failed to load.');
-          console.info('💡 Possible solutions:');
-          console.info('   1. Check your internet connection');
-          console.info(
-            '   2. If in China, Carto may be blocked.  Try fallback:'
-          );
-          console.info('      - Change MAP_TILE_VENDOR to "mapcn_openfreemap"');
-          console.info(
-            '      - Or use MAP_TILE_VENDOR = "maptiler" with free token'
-          );
-        }
       };
 
       const handleTileError = () => {
         tileErrorCount++;
 
         if (tileErrorCount === MAX_TILE_ERRORS) {
-          console.error(`❌ ${MAX_TILE_ERRORS}+ tile loading errors detected`);
-          console.warn('⚠️ Map tiles are not loading properly.');
-          console.info(
-            '💡 Try switching to a different provider in src/utils/const.ts'
+          setMapError(
+            'Map tiles failed to load. Please check your internet connection.'
           );
         }
       };
@@ -284,45 +258,39 @@ const RunMap = ({
     return filtered;
   }, [countries]);
 
+  const clearMapDataListener = useCallback(() => {
+    mapDataListenerCleanupRef.current?.();
+    mapDataListenerCleanupRef.current = null;
+  }, []);
+
   const mapRefCallback = useCallback(
-    (ref: MapRef) => {
-      if (ref !== null) {
-        mapRef.current = ref;
-        const map = ref.getMap();
-        // all style resources have been downloaded
-        // and the first visually complete rendering of the base style has occurred.
-        // it's odd. when use style other than mapbox, the style.load event is not triggered.Add commentMore actions
-        // so I use data event instead of style.load event and make sure we handle it only once.
-        map.on('data', (event) => {
-          if (event.dataType !== 'style') {
-            return;
-          }
-          if (!ROAD_LABEL_DISPLAY) {
-            const layers = map.getStyle().layers;
-            const labelLayerNames = layers
-              .filter(
-                (layer: any) =>
-                  (layer.type === 'symbol' || layer.type === 'composite') &&
-                  layer.layout.text_field !== null
-              )
-              .map((layer: any) => layer.id);
-            labelLayerNames.forEach((layerId) => {
-              if (map.getLayer(layerId)) {
-                map.removeLayer(layerId);
-              }
-            });
-          }
-          softenMapBaseLayers(map);
-          showBaseLayers(map);
-        });
+    (ref: MapRef | null) => {
+      clearMapDataListener();
+
+      if (ref === null) {
+        mapRef.current = null;
+        return;
       }
-      if (mapRef.current) {
-        const map = mapRef.current.getMap();
+
+      mapRef.current = ref;
+      const map = ref.getMap();
+      const handleStyleData = (event: { dataType?: string }) => {
+        if (event.dataType !== 'style') {
+          return;
+        }
         softenMapBaseLayers(map);
         showBaseLayers(map);
-      }
+      };
+
+      map.on('data', handleStyleData);
+      mapDataListenerCleanupRef.current = () => {
+        map.off('data', handleStyleData);
+      };
+
+      softenMapBaseLayers(map);
+      showBaseLayers(map);
     },
-    []
+    [clearMapDataListener]
   );
 
   const isBigMap = (viewState.zoom ?? 0) <= 3;
@@ -355,10 +323,6 @@ const RunMap = ({
   const isSingleRun =
     geoData.features.length === 1 &&
     geoData.features[0].geometry.coordinates.length > 0;
-
-  const dash = useMemo(() => {
-    return USE_DASH_LINE && !isSingleRun && !isBigMap ? [2, 2] : [2, 0];
-  }, [isSingleRun, isBigMap]);
 
   const handleMapLoad = useCallback(() => {
     if (hasNotifiedReadyRef.current) {
@@ -484,7 +448,7 @@ const RunMap = ({
   const style: React.CSSProperties = useMemo(
     () => ({
       width: '100%',
-      height: height ?? MAP_HEIGHT,
+      height: height ?? DEFAULT_MAP_HEIGHT,
       maxWidth: '100%', // Prevent overflow on mobile
     }),
     [height]
@@ -494,7 +458,7 @@ const RunMap = ({
     <Map
       initialViewState={viewState}
       style={style}
-      mapStyle={mapStyle}
+      mapStyle={MAP_STYLE_URL}
       ref={mapRefCallback}
       interactive={false}
       cooperativeGestures={false}
@@ -504,15 +468,8 @@ const RunMap = ({
     >
       {mapError && (
         <div className={styles.mapErrorNotification}>
-          <span>⚠️ {mapError}</span>
+          <span>{mapError}</span>
           <button onClick={() => window.location.reload()}>Reload Page</button>
-          <a
-            href="https://github.com/yihong0618/running_page#map-tiles-customization"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Troubleshooting Guide
-          </a>
         </div>
       )}
       <Source id="data" type="geojson" data={combinedGeoData}>
@@ -546,7 +503,7 @@ const RunMap = ({
               0.9,
               isBigMap ? 1.3 : isSingleRun ? 2.35 : 2,
             ],
-            'line-dasharray': dash,
+            'line-dasharray': [2, 0],
             'line-opacity': [
               'case',
               ['==', ['get', 'dimmed'], true],

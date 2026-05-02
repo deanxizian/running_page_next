@@ -1,13 +1,10 @@
 import * as mapboxPolyline from '@mapbox/polyline';
-import gcoord from 'gcoord';
 import { RPGeometry } from '@/static/run_countries';
 import { chinaCities } from '@/static/city';
 import {
   MUNICIPALITY_CITIES_ARR,
-  NEED_FIX_MAP,
   RUN_TITLES,
   SINGLE_RUN_COLOR_DARK,
-  MAP_TILE_STYLES,
 } from './const';
 import type {
   FeatureCollection,
@@ -21,9 +18,7 @@ export type Coordinate = [number, number];
 // Check for units environment variable
 const IS_IMPERIAL = import.meta.env.VITE_USE_IMPERIAL === 'true';
 export const M_TO_DIST = IS_IMPERIAL ? 1609.344 : 1000; // Meters to Mi or Km
-export const M_TO_ELEV = IS_IMPERIAL ? 3.28084 : 1; // Meters to Feet or Meters
 export const DIST_UNIT = IS_IMPERIAL ? 'mi' : 'km'; // Label
-export const ELEV_UNIT = IS_IMPERIAL ? 'ft' : 'm'; // Label
 
 export interface Activity {
   run_id: number;
@@ -184,9 +179,7 @@ const pathForRun = (run: Activity): Coordinate[] => {
     const c = mapboxPolyline.decode(summaryPolyline) as Coordinate[];
     // reverse lat long for mapbox
     c.forEach((arr) => {
-      [arr[0], arr[1]] = !NEED_FIX_MAP
-        ? [arr[1], arr[0]]
-        : gcoord.transform([arr[1], arr[0]], gcoord.GCJ02, gcoord.WGS84);
+      [arr[0], arr[1]] = [arr[1], arr[0]];
     });
     // try to use location city coordinate instead , if runpath is incomplete
     if (c.length === 2 && String(c[0]) === String(c[1])) {
@@ -275,17 +268,6 @@ const sortDateFunc = (a: Activity, b: Activity) => {
   );
 };
 
-const getMapStyle = (vendor: string, styleName: string, token: string) => {
-  const style = (MAP_TILE_STYLES as any)[vendor][styleName];
-  if (!style) {
-    return MAP_TILE_STYLES.default;
-  }
-  if (vendor === 'maptiler' || vendor === 'stadiamaps') {
-    return style + token;
-  }
-  return style;
-};
-
 export {
   formatPace,
   locationForRun,
@@ -295,5 +277,4 @@ export {
   titleForRun,
   sortDateFunc,
   convertMovingTime2Sec,
-  getMapStyle,
 };
