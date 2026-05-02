@@ -542,6 +542,7 @@ const getEventModalViewState = (
 const useTouchRevealAction = (action?: () => void) => {
   const [isTouchRevealActive, setIsTouchRevealActive] = useState(false);
   const isTouchRevealActiveRef = useRef(false);
+  const pendingTouchActionRef = useRef(false);
   const suppressNextClickRef = useRef(false);
   const touchRevealTimeoutRef = useRef<number | null>(null);
 
@@ -582,16 +583,24 @@ const useTouchRevealAction = (action?: () => void) => {
         return;
       }
 
-      suppressNextClickRef.current = true;
-      hideTouchReveal();
-      action();
+      pendingTouchActionRef.current = true;
     },
-    [action, hideTouchReveal, showTouchReveal]
+    [action, showTouchReveal]
   );
 
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>) => {
       if (!action) {
+        return;
+      }
+
+      if (pendingTouchActionRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        pendingTouchActionRef.current = false;
+        suppressNextClickRef.current = false;
+        hideTouchReveal();
+        action();
         return;
       }
 
@@ -608,11 +617,17 @@ const useTouchRevealAction = (action?: () => void) => {
     [action, hideTouchReveal]
   );
 
+  const handlePointerCancel = useCallback(() => {
+    pendingTouchActionRef.current = false;
+    suppressNextClickRef.current = false;
+  }, []);
+
   return {
     isTouchRevealActive,
     touchRevealHandlers: action
       ? {
           onPointerDown: handlePointerDown,
+          onPointerCancel: handlePointerCancel,
           onClick: handleClick,
         }
       : {},
@@ -1354,6 +1369,7 @@ const HomeView = ({
         stackDetails
         overlay="点击打开热力图"
         onClick={openHeatmap}
+        className={styles.totalMetricCard}
       />
       <MetricCard
         label="Yearly Goal"

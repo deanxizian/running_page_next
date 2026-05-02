@@ -2117,7 +2117,37 @@
     row-gap: 24px;
   }
 
-  .metricsGrid .metricCard:first-child {
+  .metricsGrid .totalMetricCard {
     grid-column: 1 / -1;
+    min-height: 118px;
+    padding: 16px 28px 16px 18px;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 10px;
+  }
+
+  .metricsGrid .totalMetricCard .metricLabel {
+    grid-column: 1 / -1;
+  }
+
+  .metricsGrid .totalMetricCard .metricValue {
+    grid-column: 1;
+    min-height: 0;
+    font-size: clamp(22px, 7vw, 28px);
+  }
+
+  .metricsGrid .totalMetricCard .metricDetails {
+    grid-column: 2;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .metricsGrid .totalMetricCard .metricProgressSlot,
+  .metricsGrid .totalMetricCard .metricTrendSlot {
+    display: none;
   }
 }
