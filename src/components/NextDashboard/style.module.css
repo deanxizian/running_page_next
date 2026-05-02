@@ -1635,7 +1635,8 @@
 }
 
 .eventModal {
-  width: min(100%, 620px);
+  box-sizing: border-box;
+  width: min(100%, 668px);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -2048,7 +2049,8 @@
   }
 
   .footer {
-    display: none;
+    padding: 28px 18px 34px;
+    font-size: 12px;
   }
 }
 

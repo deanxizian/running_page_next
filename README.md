@@ -1,20 +1,44 @@
 # Running Page Next
 
-Strava-backed running dashboard.
+## Deploy
 
-## Automation
+### Vercel
 
-- Strava sync: `.github/workflows/run_data_sync.yml` runs every day at `00:00` Asia/Shanghai and commits refreshed `run_page/data.db` plus `src/static/activities.json`.
-- GitHub Pages: `.github/workflows/gh-pages.yml` deploys automatically on pushes to `main` or `master` that affect the site. The Strava sync workflow also dispatches it after committing refreshed data, because commits made with `GITHUB_TOKEN` do not fan out to normal push workflows. For the first deployment in a new repository, enable GitHub Pages in repository settings and set the source to GitHub Actions.
-- Vercel: connect this GitHub repository in Vercel. Use build command `pnpm build` and output directory `dist`; Vercel will deploy on every push, including the daily Strava data commit.
+- Framework Preset: `Vite`
+- Build Command: `pnpm build`
+- Output Directory: `dist`
+- Root Directory: project root
+- Node.js: `20+`
 
-Required GitHub secrets for Strava sync:
+Required Vercel environment variable:
+
+- `VITE_MAPBOX_TOKEN`
+
+### GitHub Pages
+
+GitHub Pages is deployed by `.github/workflows/gh-pages.yml`.
+
+Repository setting required for first deployment:
+
+- `Settings -> Pages -> Source -> GitHub Actions`
+
+Required GitHub variable or secret:
+
+- `VITE_MAPBOX_TOKEN`
+
+## Strava Sync
+
+Daily Strava sync is handled by `.github/workflows/run_data_sync.yml`.
+
+Required GitHub secrets:
 
 - `STRAVA_CLIENT_ID`
 - `STRAVA_CLIENT_SECRET`
 - `STRAVA_CLIENT_REFRESH_TOKEN`
 
-Local commands:
+The sync workflow updates `src/static/activities.json`, commits it to `main`, and triggers the site deployment.
+
+## Local
 
 ```bash
 pnpm install

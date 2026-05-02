@@ -29,7 +29,6 @@ import {
   convertMovingTime2Sec,
   formatPace,
   geoJsonForRuns,
-  getBoundsForGeoData,
   pathForRun,
   sortDateFunc,
   titleForRun,
@@ -68,6 +67,10 @@ const MAP_FIT_PADDING = 155;
 const MAP_TARGET_ZOOM_PULLBACK = 0.14;
 const TOUCH_REVEAL_DURATION_MS = 1800;
 const EVENT_MODAL_EXIT_DURATION_MS = 220;
+const EVENT_MODAL_MAP_HEIGHT = 260;
+const EVENT_MODAL_MAP_MAX_WIDTH = 620;
+const EVENT_MODAL_MAP_MIN_WIDTH = 260;
+const EVENT_MODAL_MAP_HORIZONTAL_CHROME = 96;
 const MARATHON_EVENT_NAME_PATTERN =
   /马拉松|半程|半马|全马|marathon|half\s*marathon/i;
 const HALF_MARATHON_NAME_PATTERN = /半程|半马|half\s*marathon/i;
@@ -481,6 +484,60 @@ const viewStatesNearlyEqual = (left: IViewState, right: IViewState) =>
   ) < 0.0001 &&
   Math.abs(finiteViewValue(left.zoom, 0) - finiteViewValue(right.zoom, 0)) <
     0.01;
+
+const getEventModalMapViewport = () => {
+  const viewportWidth =
+    typeof window === 'undefined'
+      ? EVENT_MODAL_MAP_MAX_WIDTH + EVENT_MODAL_MAP_HORIZONTAL_CHROME
+      : window.innerWidth;
+
+  return {
+    width: Math.min(
+      EVENT_MODAL_MAP_MAX_WIDTH,
+      Math.max(
+        EVENT_MODAL_MAP_MIN_WIDTH,
+        viewportWidth - EVENT_MODAL_MAP_HORIZONTAL_CHROME
+      )
+    ),
+    height: EVENT_MODAL_MAP_HEIGHT,
+  };
+};
+
+const getEventModalViewState = (
+  run: Activity | null,
+  viewport: { width: number; height: number }
+): IViewState => {
+  const points = run ? pathForRun(run) : [];
+
+  if (!points.length) {
+    return { longitude: 20, latitude: 20, zoom: 3 };
+  }
+
+  if (points.length === 2 && String(points[0]) === String(points[1])) {
+    return { longitude: points[0][0], latitude: points[0][1], zoom: 9 };
+  }
+
+  const pointsLong = points.map((point) => point[0]);
+  const pointsLat = points.map((point) => point[1]);
+  const cornersLongLat: [Coordinate, Coordinate] = [
+    [Math.min(...pointsLong), Math.min(...pointsLat)],
+    [Math.max(...pointsLong), Math.max(...pointsLat)],
+  ];
+  const isCompactModalMap = viewport.width < 560;
+  const isNarrowModalMap = viewport.width < 420;
+  const fitPadding = isNarrowModalMap ? 24 : isCompactModalMap ? 26 : 26;
+  const zoomPullback = 0;
+  const viewState = new WebMercatorViewport(viewport).fitBounds(
+    cornersLongLat,
+    { padding: fitPadding }
+  );
+
+  return {
+    longitude: viewState.longitude,
+    latitude: viewState.latitude,
+    zoom: Math.max(1, Math.min(viewState.zoom - zoomPullback, 16)),
+  };
+};
 
 const useTouchRevealAction = (action?: () => void) => {
   const [isTouchRevealActive, setIsTouchRevealActive] = useState(false);
@@ -1824,7 +1881,19 @@ const HeatmapView = ({
 const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
   const [selectedEvent, setSelectedEvent] = useState<Activity | null>(null);
   const [isEventModalClosing, setIsEventModalClosing] = useState(false);
+  const [eventModalMapViewport, setEventModalMapViewport] = useState(
+    getEventModalMapViewport
+  );
   const eventModalExitTimeoutRef = useRef<number | null>(null);
+  const eventScrollLockRef = useRef<{
+    scrollY: number;
+    bodyOverflow: string;
+    bodyPosition: string;
+    bodyTop: string;
+    bodyWidth: string;
+    htmlOverflow: string;
+  } | null>(null);
+  const isEventModalOpen = selectedEvent !== null;
   const eventRuns = useMemo(
     () => sortedActivities.filter(isMarathonEventRun),
     [sortedActivities]
@@ -1876,8 +1945,8 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
     [selectedEvent]
   );
   const modalViewState = useMemo(
-    () => getBoundsForGeoData(modalGeoData),
-    [modalGeoData]
+    () => getEventModalViewState(selectedEvent, eventModalMapViewport),
+    [eventModalMapViewport, selectedEvent]
   );
   const ignoreModalViewStateUpdate = useCallback(() => undefined, []);
   const clearEventModalExitTimeout = useCallback(() => {
@@ -1913,6 +1982,64 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
     },
     [clearEventModalExitTimeout]
   );
+
+  useEffect(() => {
+    if (!isEventModalOpen) {
+      return undefined;
+    }
+
+    const updateEventModalMapViewport = () => {
+      setEventModalMapViewport(getEventModalMapViewport());
+    };
+
+    updateEventModalMapViewport();
+    window.addEventListener('resize', updateEventModalMapViewport);
+
+    return () => {
+      window.removeEventListener('resize', updateEventModalMapViewport);
+    };
+  }, [isEventModalOpen]);
+
+  useEffect(() => {
+    if (!isEventModalOpen || eventScrollLockRef.current) {
+      return undefined;
+    }
+
+    const bodyStyle = document.body.style;
+    const htmlStyle = document.documentElement.style;
+    const scrollY = window.scrollY;
+
+    eventScrollLockRef.current = {
+      scrollY,
+      bodyOverflow: bodyStyle.overflow,
+      bodyPosition: bodyStyle.position,
+      bodyTop: bodyStyle.top,
+      bodyWidth: bodyStyle.width,
+      htmlOverflow: htmlStyle.overflow,
+    };
+
+    htmlStyle.overflow = 'hidden';
+    bodyStyle.overflow = 'hidden';
+    bodyStyle.position = 'fixed';
+    bodyStyle.top = `-${scrollY}px`;
+    bodyStyle.width = '100%';
+
+    return () => {
+      const lock = eventScrollLockRef.current;
+
+      if (!lock) {
+        return;
+      }
+
+      htmlStyle.overflow = lock.htmlOverflow;
+      bodyStyle.overflow = lock.bodyOverflow;
+      bodyStyle.position = lock.bodyPosition;
+      bodyStyle.top = lock.bodyTop;
+      bodyStyle.width = lock.bodyWidth;
+      eventScrollLockRef.current = null;
+      window.scrollTo(0, lock.scrollY);
+    };
+  }, [isEventModalOpen]);
 
   return (
     <main className={`${styles.main} ${styles.eventsMain}`}>
@@ -1986,7 +2113,7 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
                 setViewState={ignoreModalViewStateUpdate}
                 changeYear={() => undefined}
                 thisYear={selectedEvent.start_date_local.slice(0, 4)}
-                height={260}
+                height={EVENT_MODAL_MAP_HEIGHT}
                 showYearButtons={false}
                 showTitle={false}
                 animateCamera={false}
