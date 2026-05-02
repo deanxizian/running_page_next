@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import RunMap from '@/components/RunMap';
+import RunMap from '@/components/RunMap/LazyRunMap';
 import type { Activity } from '@/utils/utils';
 import {
   M_TO_DIST,

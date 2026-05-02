@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import RunMap from '@/components/RunMap';
+import RunMap from '@/components/RunMap/LazyRunMap';
 import type { ActivityGroups } from '@/hooks/useActivities';
 import type { Activity, IViewState } from '@/utils/utils';
 import {

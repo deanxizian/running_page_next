@@ -1,15 +1,16 @@
-import React, {
+import {
   useRef,
   useCallback,
   useState,
   useEffect,
   useMemo,
 } from 'react';
+import type { CSSProperties } from 'react';
 import Map, {
   Layer,
   Source,
-  MapRef,
 } from 'react-map-gl';
+import type { MapRef } from 'react-map-gl';
 import type { MapInstance } from 'react-map-gl/src/types/lib';
 import useActivities from '@/hooks/useActivities';
 import {
@@ -27,10 +28,10 @@ import {
 } from '@/utils/utils';
 import styles from './style.module.css';
 import type { FeatureCollection } from '@/types/geojson';
-import { RPGeometry } from '@/static/run_countries';
+import type { RPGeometry } from '@/static/run_countries';
 import './mapbox.css';
 
-interface IRunMapProps {
+export interface RunMapProps {
   viewState: IViewState;
   setViewState: (_viewState: IViewState) => void;
   geoData: FeatureCollection<RPGeometry>;
@@ -89,7 +90,7 @@ const softenMapBaseLayers = (map: MapInstance) => {
   const layers = styleJson.layers as MapStyleLayer[] | undefined;
 
   if (!layers?.length) {
-    return;
+    return false;
   }
 
   layers.forEach((layer) => {
@@ -169,6 +170,8 @@ const softenMapBaseLayers = (map: MapInstance) => {
       setBasePaintProperty(map, layer.id, 'icon-opacity', 0.28);
     }
   });
+
+  return true;
 };
 
 const showBaseLayers = (map: MapInstance) => {
@@ -198,32 +201,121 @@ const RunMap = ({
   height,
   onReady,
   animateCamera = true,
-}: IRunMapProps) => {
+}: RunMapProps) => {
   const { countries, provinces } = useActivities();
   const mapRef = useRef<MapRef>(null);
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
-  const mapDataListenerCleanupRef = useRef<(() => void) | null>(null);
+  const mapListenerCleanupRef = useRef<(() => void) | null>(null);
+  const styleRefreshFrameRef = useRef<number | null>(null);
+  const baseStyleRevealCleanupRef = useRef<(() => void) | null>(null);
   const hasNotifiedReadyRef = useRef(false);
+  const hasRevealedBaseStyleRef = useRef(false);
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
   const [isLoadingMapData, setIsLoadingMapData] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isBaseStyleReady, setIsBaseStyleReady] = useState(false);
 
-  useEffect(() => {
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
+  // Memoize filter arrays to prevent recreating them on every render
+  const filterProvinces = useMemo(() => {
+    return ['in', 'name', ...provinces];
+  }, [provinces]);
 
-      // Track tile loading errors
+  const filterCountries = useMemo(() => {
+    return ['in', 'name', ...countries];
+  }, [countries]);
+
+  const clearMapListeners = useCallback(() => {
+    mapListenerCleanupRef.current?.();
+    mapListenerCleanupRef.current = null;
+
+    if (styleRefreshFrameRef.current !== null) {
+      window.cancelAnimationFrame(styleRefreshFrameRef.current);
+      styleRefreshFrameRef.current = null;
+    }
+
+    baseStyleRevealCleanupRef.current?.();
+    baseStyleRevealCleanupRef.current = null;
+  }, []);
+
+  const revealBaseStyle = useCallback(() => {
+    if (hasRevealedBaseStyleRef.current) {
+      return;
+    }
+
+    hasRevealedBaseStyleRef.current = true;
+    setIsBaseStyleReady(true);
+  }, []);
+
+  const scheduleBaseStyleReveal = useCallback(
+    (map: MapInstance) => {
+      if (
+        hasRevealedBaseStyleRef.current ||
+        baseStyleRevealCleanupRef.current
+      ) {
+        return;
+      }
+
+      const reveal = () => {
+        baseStyleRevealCleanupRef.current?.();
+        revealBaseStyle();
+      };
+      const fallbackTimer = window.setTimeout(reveal, 700);
+
+      baseStyleRevealCleanupRef.current = () => {
+        map.off('idle', reveal);
+        window.clearTimeout(fallbackTimer);
+        baseStyleRevealCleanupRef.current = null;
+      };
+      map.once('idle', reveal);
+    },
+    [revealBaseStyle]
+  );
+
+  const scheduleBaseStyleRefresh = useCallback((map: MapInstance) => {
+    if (styleRefreshFrameRef.current !== null) {
+      return;
+    }
+
+    styleRefreshFrameRef.current = window.requestAnimationFrame(() => {
+      styleRefreshFrameRef.current = null;
+      const didRefreshBaseStyle = softenMapBaseLayers(map);
+      showBaseLayers(map);
+
+      if (didRefreshBaseStyle) {
+        scheduleBaseStyleReveal(map);
+      }
+    });
+  }, [scheduleBaseStyleReveal]);
+
+  const mapRefCallback = useCallback(
+    (ref: MapRef | null) => {
+      clearMapListeners();
+
+      if (ref === null) {
+        mapRef.current = null;
+        return;
+      }
+
+      mapRef.current = ref;
+      hasRevealedBaseStyleRef.current = false;
+      setIsBaseStyleReady(false);
+      const map = ref.getMap();
       let tileErrorCount = 0;
       const MAX_TILE_ERRORS = 10;
 
+      const handleStyleData = (event: { dataType?: string }) => {
+        if (event.dataType !== 'style') {
+          return;
+        }
+        scheduleBaseStyleRefresh(map);
+      };
       const handleStyleError = () => {
         setMapError(
           'Map tiles failed to load. Please check your internet connection.'
         );
       };
-
       const handleTileError = () => {
         tileErrorCount++;
 
@@ -234,63 +326,18 @@ const RunMap = ({
         }
       };
 
+      map.on('data', handleStyleData);
       map.on('error', handleStyleError);
       map.on('tileerror', handleTileError);
-
-      // Cleanup
-      return () => {
+      mapListenerCleanupRef.current = () => {
+        map.off('data', handleStyleData);
         map.off('error', handleStyleError);
         map.off('tileerror', handleTileError);
       };
-    }
-  }, [mapRef]);
 
-  // Memoize filter arrays to prevent recreating them on every render
-  const filterProvinces = useMemo(() => {
-    const filtered = provinces.slice();
-    filtered.unshift('in', 'name');
-    return filtered;
-  }, [provinces]);
-
-  const filterCountries = useMemo(() => {
-    const filtered = countries.slice();
-    filtered.unshift('in', 'name');
-    return filtered;
-  }, [countries]);
-
-  const clearMapDataListener = useCallback(() => {
-    mapDataListenerCleanupRef.current?.();
-    mapDataListenerCleanupRef.current = null;
-  }, []);
-
-  const mapRefCallback = useCallback(
-    (ref: MapRef | null) => {
-      clearMapDataListener();
-
-      if (ref === null) {
-        mapRef.current = null;
-        return;
-      }
-
-      mapRef.current = ref;
-      const map = ref.getMap();
-      const handleStyleData = (event: { dataType?: string }) => {
-        if (event.dataType !== 'style') {
-          return;
-        }
-        softenMapBaseLayers(map);
-        showBaseLayers(map);
-      };
-
-      map.on('data', handleStyleData);
-      mapDataListenerCleanupRef.current = () => {
-        map.off('data', handleStyleData);
-      };
-
-      softenMapBaseLayers(map);
-      showBaseLayers(map);
+      scheduleBaseStyleRefresh(map);
     },
-    [clearMapDataListener]
+    [clearMapListeners, scheduleBaseStyleRefresh]
   );
 
   const isBigMap = (viewState.zoom ?? 0) <= 3;
@@ -445,7 +492,7 @@ const RunMap = ({
     viewState.zoom,
   ]);
 
-  const style: React.CSSProperties = useMemo(
+  const frameStyle: CSSProperties = useMemo(
     () => ({
       width: '100%',
       height: height ?? DEFAULT_MAP_HEIGHT,
@@ -454,98 +501,123 @@ const RunMap = ({
     [height]
   );
 
+  const mapStyle: CSSProperties = useMemo(
+    () => ({
+      width: '100%',
+      height: '100%',
+      maxWidth: '100%',
+    }),
+    []
+  );
+
   return (
-    <Map
-      initialViewState={viewState}
-      style={style}
-      mapStyle={MAP_STYLE_URL}
-      ref={mapRefCallback}
-      interactive={false}
-      cooperativeGestures={false}
-      mapboxAccessToken={MAPBOX_TOKEN}
-      attributionControl={false}
-      onLoad={handleMapLoad}
+    <div
+      className={styles.mapFrame}
+      style={frameStyle}
     >
+      <Map
+        initialViewState={viewState}
+        style={mapStyle}
+        mapStyle={MAP_STYLE_URL}
+        ref={mapRefCallback}
+        interactive={false}
+        cooperativeGestures={false}
+        mapboxAccessToken={MAPBOX_TOKEN}
+        attributionControl={false}
+        onLoad={handleMapLoad}
+      >
+        <Source id="data" type="geojson" data={combinedGeoData}>
+          <Layer
+            id="province"
+            type="fill"
+            paint={{
+              'fill-color': PROVINCE_FILL_COLOR,
+              'fill-opacity': 0.18,
+            }}
+            filter={filterProvinces}
+          />
+          <Layer
+            id="countries"
+            type="fill"
+            paint={{
+              'fill-color': COUNTRY_FILL_COLOR,
+              // in China, fill a bit lighter while already filled provinces
+              'fill-opacity': [
+                'case',
+                ['==', ['get', 'name'], '中国'],
+                0.1,
+                0.5,
+              ],
+            }}
+            filter={filterCountries}
+          />
+          <Layer
+            id="runs2"
+            type="line"
+            paint={{
+              'line-color': SINGLE_RUN_COLOR_DARK,
+              'line-width': [
+                'case',
+                ['==', ['get', 'dimmed'], true],
+                0.9,
+                isBigMap ? 1.3 : isSingleRun ? 2.35 : 2,
+              ],
+              'line-dasharray': [2, 0],
+              'line-opacity': [
+                'case',
+                ['==', ['get', 'dimmed'], true],
+                0.18,
+                isSingleRun || isBigMap ? 0.86 : 0.8,
+              ],
+              'line-blur': 0.35,
+            }}
+            layout={{
+              'line-join': 'round',
+              'line-cap': 'round',
+            }}
+            filter={['!=', ['get', 'indoor'], true]}
+          />
+          <Layer
+            id="runs2-indoor"
+            type="line"
+            paint={{
+              'line-color': SINGLE_RUN_COLOR_DARK,
+              'line-width': [
+                'case',
+                ['==', ['get', 'dimmed'], true],
+                0.85,
+                isBigMap ? 1.2 : isSingleRun ? 2.1 : 1.85,
+              ],
+              'line-dasharray': [2, 0],
+              'line-opacity': [
+                'case',
+                ['==', ['get', 'dimmed'], true],
+                0.1,
+                isSingleRun || isBigMap ? 0.55 : LINE_OPACITY * 0.55,
+              ],
+              'line-blur': 0.35,
+            }}
+            layout={{
+              'line-join': 'round',
+              'line-cap': 'round',
+            }}
+            filter={['==', ['get', 'indoor'], true]}
+          />
+        </Source>
+      </Map>
+      <div
+        aria-hidden="true"
+        className={`${styles.mapBaseShield} ${
+          isBaseStyleReady ? styles.mapBaseShieldHidden : ''
+        }`}
+      />
       {mapError && (
         <div className={styles.mapErrorNotification}>
           <span>{mapError}</span>
           <button onClick={() => window.location.reload()}>Reload Page</button>
         </div>
       )}
-      <Source id="data" type="geojson" data={combinedGeoData}>
-        <Layer
-          id="province"
-          type="fill"
-          paint={{
-            'fill-color': PROVINCE_FILL_COLOR,
-            'fill-opacity': 0.18,
-          }}
-          filter={filterProvinces}
-        />
-        <Layer
-          id="countries"
-          type="fill"
-          paint={{
-            'fill-color': COUNTRY_FILL_COLOR,
-            // in China, fill a bit lighter while already filled provinces
-            'fill-opacity': ['case', ['==', ['get', 'name'], '中国'], 0.1, 0.5],
-          }}
-          filter={filterCountries}
-        />
-        <Layer
-          id="runs2"
-          type="line"
-          paint={{
-            'line-color': SINGLE_RUN_COLOR_DARK,
-            'line-width': [
-              'case',
-              ['==', ['get', 'dimmed'], true],
-              0.9,
-              isBigMap ? 1.3 : isSingleRun ? 2.35 : 2,
-            ],
-            'line-dasharray': [2, 0],
-            'line-opacity': [
-              'case',
-              ['==', ['get', 'dimmed'], true],
-              0.18,
-              isSingleRun || isBigMap ? 0.86 : 0.8,
-            ],
-            'line-blur': 0.35,
-          }}
-          layout={{
-            'line-join': 'round',
-            'line-cap': 'round',
-          }}
-          filter={['!=', ['get', 'indoor'], true]}
-        />
-        <Layer
-          id="runs2-indoor"
-          type="line"
-          paint={{
-            'line-color': SINGLE_RUN_COLOR_DARK,
-            'line-width': [
-              'case',
-              ['==', ['get', 'dimmed'], true],
-              0.85,
-              isBigMap ? 1.2 : isSingleRun ? 2.1 : 1.85,
-            ],
-            'line-dasharray': [2, 0],
-            'line-opacity': [
-              'case',
-              ['==', ['get', 'dimmed'], true],
-              0.1,
-              isSingleRun || isBigMap ? 0.55 : LINE_OPACITY * 0.55,
-            ],
-            'line-blur': 0.35,
-          }}
-          layout={{
-            'line-join': 'round',
-            'line-cap': 'round',
-          }}
-          filter={['==', ['get', 'indoor'], true]}
-        />
-      </Source>
-    </Map>
+    </div>
   );
 };
 

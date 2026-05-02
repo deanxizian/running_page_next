@@ -1,5 +1,5 @@
 import * as mapboxPolyline from '@mapbox/polyline';
-import { RPGeometry } from '@/static/run_countries';
+import type { RPGeometry } from '@/static/run_countries';
 import { chinaCities } from '@/static/city';
 import {
   MUNICIPALITY_CITIES_ARR,
