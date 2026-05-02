@@ -74,6 +74,7 @@ const MARATHON_EVENT_NAME_PATTERN =
   /马拉松|半程|半马|全马|marathon|half\s*marathon/i;
 const HALF_MARATHON_NAME_PATTERN = /半程|半马|half\s*marathon/i;
 const FULL_MARATHON_NAME_PATTERN = /全马|马拉松|marathon/i;
+const EMPTY_ACTIVITIES: Activity[] = [];
 
 const NAV_LINKS = [
   { to: '/', label: '首页' },
@@ -168,6 +169,25 @@ const totalDistance = (runs: Activity[]) =>
 
 const totalSeconds = (runs: Activity[]) =>
   runs.reduce((sum, run) => sum + convertMovingTime2Sec(run.moving_time), 0);
+
+const groupActivitiesByDate = (runs: Activity[]) => {
+  const byYear = new Map<string, Activity[]>();
+  const byMonth = new Map<string, Activity[]>();
+
+  runs.forEach((run) => {
+    const year = run.start_date_local.slice(0, 4);
+    const month = run.start_date_local.slice(0, 7);
+    const yearRuns = byYear.get(year) ?? [];
+    const monthRuns = byMonth.get(month) ?? [];
+
+    yearRuns.push(run);
+    monthRuns.push(run);
+    byYear.set(year, yearRuns);
+    byMonth.set(month, monthRuns);
+  });
+
+  return { byYear, byMonth };
+};
 
 const formatMonthlyBarDistance = (distance: number) => {
   if (distance === 0) {
@@ -843,6 +863,17 @@ const EventPbMedalIcon = () => (
   </svg>
 );
 
+const ChevronIcon = ({ direction }: { direction: 'left' | 'right' }) => (
+  <svg
+    className={styles.navArrowIcon}
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d={direction === 'left' ? 'M15 18 9 12l6-6' : 'm9 18 6-6-6-6'} />
+  </svg>
+);
+
 const navIndicatorStyle = (activeNavIndex: number, travelSteps: number) =>
   ({
     '--nav-indicator-offset':
@@ -1010,16 +1041,19 @@ const HomeView = ({
 
   useEffect(() => clearCalendarPreview, [clearCalendarPreview]);
 
+  const activityGroups = useMemo(
+    () => groupActivitiesByDate(sortedActivities),
+    [sortedActivities]
+  );
+
   const getActivitiesForFilter = useCallback(
     (filter: string) => {
       if (filter === 'All') {
         return sortedActivities;
       }
-      return sortedActivities.filter((run) =>
-        run.start_date_local.startsWith(filter)
-      );
+      return activityGroups.byYear.get(filter) ?? EMPTY_ACTIVITIES;
     },
-    [sortedActivities]
+    [activityGroups, sortedActivities]
   );
 
   const displayedActivities = useMemo(
@@ -1107,40 +1141,18 @@ const HomeView = ({
     [selectRun, selectedRun]
   );
 
-  const currentYearRuns = useMemo(
-    () =>
-      sortedActivities.filter((run) =>
-        run.start_date_local.startsWith(thisYear)
-      ),
-    [sortedActivities, thisYear]
-  );
+  const currentYearRuns =
+    activityGroups.byYear.get(thisYear) ?? EMPTY_ACTIVITIES;
   const previousYear = String(Number(thisYear) - 1);
-  const previousYearRuns = useMemo(
-    () =>
-      sortedActivities.filter((run) =>
-        run.start_date_local.startsWith(previousYear)
-      ),
-    [previousYear, sortedActivities]
-  );
-  const currentMonthRuns = useMemo(
-    () =>
-      latestMonth
-        ? sortedActivities.filter((run) =>
-            run.start_date_local.startsWith(latestMonth)
-          )
-        : [],
-    [latestMonth, sortedActivities]
-  );
+  const previousYearRuns =
+    activityGroups.byYear.get(previousYear) ?? EMPTY_ACTIVITIES;
+  const currentMonthRuns = latestMonth
+    ? (activityGroups.byMonth.get(latestMonth) ?? EMPTY_ACTIVITIES)
+    : EMPTY_ACTIVITIES;
   const previousMonth = latestMonth ? shiftMonthKey(latestMonth, -1) : '';
-  const previousMonthRuns = useMemo(
-    () =>
-      previousMonth
-        ? sortedActivities.filter((run) =>
-            run.start_date_local.startsWith(previousMonth)
-          )
-        : [],
-    [previousMonth, sortedActivities]
-  );
+  const previousMonthRuns = previousMonth
+    ? (activityGroups.byMonth.get(previousMonth) ?? EMPTY_ACTIVITIES)
+    : EMPTY_ACTIVITIES;
 
   const mapRuns = useMemo(
     () => (selectedRun ? [selectedRun] : displayedActivities),
@@ -1222,15 +1234,15 @@ const HomeView = ({
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDay = getMondayFirstDayIndex(new Date(year, month - 1, 1));
     const runsByDay = new Map<number, Activity[]>();
+    const monthRuns =
+      activityGroups.byMonth.get(calendarMonth) ?? EMPTY_ACTIVITIES;
 
-    sortedActivities
-      .filter((run) => run.start_date_local.startsWith(calendarMonth))
-      .forEach((run) => {
-        const day = Number(run.start_date_local.slice(8, 10));
-        const runs = runsByDay.get(day) ?? [];
-        runs.push(run);
-        runsByDay.set(day, runs);
-      });
+    monthRuns.forEach((run) => {
+      const day = Number(run.start_date_local.slice(8, 10));
+      const runs = runsByDay.get(day) ?? [];
+      runs.push(run);
+      runsByDay.set(day, runs);
+    });
 
     const cells = Array.from({ length: firstDay }, () => ({
       day: null,
@@ -1257,13 +1269,9 @@ const HomeView = ({
 
     return {
       cells,
-      monthlyDistance: totalDistance(
-        sortedActivities.filter((run) =>
-          run.start_date_local.startsWith(calendarMonth)
-        )
-      ),
+      monthlyDistance: totalDistance(monthRuns),
     };
-  }, [calendarMonth, sortedActivities]);
+  }, [activityGroups, calendarMonth]);
 
   const monthlyChartYear = (
     calendarMonth ||
@@ -1275,9 +1283,7 @@ const HomeView = ({
     const year = Number(monthlyChartYear);
     const totals = Array.from({ length: 12 }, (_, index) => {
       const month = `${year}-${String(index + 1).padStart(2, '0')}`;
-      return totalDistance(
-        sortedActivities.filter((run) => run.start_date_local.startsWith(month))
-      );
+      return totalDistance(activityGroups.byMonth.get(month) ?? EMPTY_ACTIVITIES);
     });
     const max = Math.max(...totals, 1);
     return totals.map((value, index) => ({
@@ -1286,7 +1292,7 @@ const HomeView = ({
       distanceLabel: formatMonthlyBarDistance(value),
       height: `${Math.max(4, (value / max) * 100)}%`,
     }));
-  }, [monthlyChartYear, sortedActivities]);
+  }, [activityGroups, monthlyChartYear]);
   const activeMonthlyBarKey = hoveredMonthKey ?? calendarMonth ?? latestMonth;
   const calendarSlideClass =
     calendarSlideDirection === 'backward'
@@ -1517,14 +1523,14 @@ const HomeView = ({
             onClick={() => changeCalendarMonth(shiftMonthKey(calendarMonth, -1))}
             aria-label="Previous month"
           >
-            ‹
+            <ChevronIcon direction="left" />
           </button>
           <button
             type="button"
             onClick={() => changeCalendarMonth(shiftMonthKey(calendarMonth, 1))}
             aria-label="Next month"
           >
-            ›
+            <ChevronIcon direction="right" />
           </button>
         </div>
       </div>
@@ -1579,7 +1585,7 @@ const HomeView = ({
             disabled={!olderMonthlyChartYear}
             aria-label="Previous year"
           >
-            ‹
+            <ChevronIcon direction="left" />
           </button>
           <span>{monthlyChartYear}</span>
           <button
@@ -1588,7 +1594,7 @@ const HomeView = ({
             disabled={!newerMonthlyChartYear}
             aria-label="Next year"
           >
-            ›
+            <ChevronIcon direction="right" />
           </button>
         </div>
       </div>
@@ -1623,6 +1629,7 @@ const HomeView = ({
   ) => {
     const selected = selectedRun?.run_id === run.run_id;
     const [activityDate, activityTime = ''] = run.start_date_local.split(' ');
+    const activityDisplayTime = activityTime.slice(0, 5);
 
     return (
       <tr
@@ -1635,7 +1642,7 @@ const HomeView = ({
       >
         <td className={styles.activityDateCell}>
           <span>{activityDate}</span>
-          {activityTime && <small>{activityTime}</small>}
+          {activityDisplayTime && <small>{activityDisplayTime}</small>}
         </td>
         <td>{activityTitleForRun(run)}</td>
         <td>
@@ -1695,7 +1702,7 @@ const HomeView = ({
         disabled={currentPage === 0}
         aria-label="Previous page"
       >
-        ‹
+        <ChevronIcon direction="left" />
       </button>
       <span>
         Page {currentPage + 1} of {currentPageCount}
@@ -1706,7 +1713,7 @@ const HomeView = ({
         disabled={currentPage >= currentPageCount - 1}
         aria-label="Next page"
       >
-        ›
+        <ChevronIcon direction="right" />
       </button>
     </div>
   );

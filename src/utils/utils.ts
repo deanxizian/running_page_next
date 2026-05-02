@@ -100,6 +100,13 @@ const extractCoordinate = (str: string): [number, number] | null => {
 
 const cities = chinaCities.map((c) => c.name);
 const locationCache = new Map<number, ReturnType<typeof locationForRun>>();
+const pathCache = new Map<
+  number,
+  {
+    summaryPolyline: string;
+    path: Coordinate[];
+  }
+>();
 // what about oversea?
 const locationForRun = (
   run: Activity
@@ -161,11 +168,20 @@ const locationForRun = (
 };
 
 const pathForRun = (run: Activity): Coordinate[] => {
+  const summaryPolyline = run.summary_polyline ?? '';
+
+  if (!summaryPolyline) {
+    pathCache.delete(run.run_id);
+    return [];
+  }
+
+  const cached = pathCache.get(run.run_id);
+  if (cached?.summaryPolyline === summaryPolyline) {
+    return cached.path;
+  }
+
   try {
-    if (!run.summary_polyline) {
-      return [];
-    }
-    const c = mapboxPolyline.decode(run.summary_polyline);
+    const c = mapboxPolyline.decode(summaryPolyline) as Coordinate[];
     // reverse lat long for mapbox
     c.forEach((arr) => {
       [arr[0], arr[1]] = !NEED_FIX_MAP
@@ -176,11 +192,15 @@ const pathForRun = (run: Activity): Coordinate[] => {
     if (c.length === 2 && String(c[0]) === String(c[1])) {
       const { coordinate } = locationForRun(run);
       if (coordinate?.[0] && coordinate?.[1]) {
-        return [coordinate, coordinate];
+        const path = [coordinate, coordinate] as Coordinate[];
+        pathCache.set(run.run_id, { summaryPolyline, path });
+        return path;
       }
     }
+    pathCache.set(run.run_id, { summaryPolyline, path: c });
     return c;
   } catch (_err) {
+    pathCache.delete(run.run_id);
     return [];
   }
 };

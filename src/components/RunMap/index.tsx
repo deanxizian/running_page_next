@@ -51,6 +51,7 @@ const RUNNING_LAYER_IDS = new Set([
   'runs2',
   'runs2-indoor',
 ]);
+const ROUTE_LAYER_IDS = new Set(['runs2', 'runs2-indoor']);
 
 type MapStyleLayer = {
   id: string;
@@ -175,6 +176,26 @@ const softenMapBaseLayers = (map: MapInstance) => {
   });
 };
 
+const showBaseLayers = (map: MapInstance) => {
+  let styleJson;
+
+  try {
+    styleJson = map.getStyle();
+  } catch {
+    return;
+  }
+
+  styleJson.layers.forEach((layer: { id: string }) => {
+    try {
+      if (!ROUTE_LAYER_IDS.has(layer.id) && map.getLayer(layer.id)) {
+        map.setLayoutProperty(layer.id, 'visibility', 'visible');
+      }
+    } catch {
+      // Third-party styles can change while data events are still firing.
+    }
+  });
+};
+
 const RunMap = ({
   viewState,
   setViewState,
@@ -188,8 +209,6 @@ const RunMap = ({
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
   const hasNotifiedReadyRef = useRef(false);
-  const lights = true;
-  const routeLayerIds = ['runs2', 'runs2-indoor'];
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
   const [isLoadingMapData, setIsLoadingMapData] = useState(false);
@@ -200,51 +219,6 @@ const RunMap = ({
       getMapStyle(MAP_TILE_VENDOR, MAP_TILE_STYLE_DARK, MAP_TILE_ACCESS_TOKEN),
     []
   );
-
-  // Mapbox GL JS requires a token even when using other vendors
-  // Always use the MAPBOX_TOKEN from const.ts (user may have set their own token)
-  const mapboxAccessToken = useMemo(() => {
-    return MAPBOX_TOKEN;
-  }, []);
-
-  // Update map when theme changes
-  useEffect(() => {
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
-
-      // Save current map state before changing style
-      const currentCenter = map.getCenter();
-      const currentZoom = map.getZoom();
-      const currentBearing = map.getBearing();
-      const currentPitch = map.getPitch();
-
-      // Apply new style
-      map.setStyle(mapStyle);
-
-      // Create a stable handler for style.load to ensure proper cleanup
-      const handleStyleLoad = () => {
-        // Add a small delay to ensure style is fully loaded
-        setTimeout(() => {
-          try {
-            // Restore map view state
-            map.setCenter(currentCenter);
-            map.setZoom(currentZoom);
-            map.setBearing(currentBearing);
-            map.setPitch(currentPitch);
-
-            // Reapply layer visibility settings with current lights state
-            softenMapBaseLayers(map);
-            switchLayerVisibility(map, lights);
-          } catch (error) {
-            console.warn('Error applying map style changes:', error);
-          }
-        }, 100);
-      };
-
-      // Use once to automatically remove the listener after it fires
-      map.once('style.load', handleStyleLoad);
-    }
-  }, [mapStyle, lights]); // Include lights to ensure layer visibility updates correctly when theme changes
 
   useEffect(() => {
     if (mapRef.current) {
@@ -310,44 +284,6 @@ const RunMap = ({
     return filtered;
   }, [countries]);
 
-  /**
-   * Toggle visibility of map layers based on lights setting
-   * @param map - The Mapbox map instance
-   * @param lights - Whether lights are on or off
-   */
-  function switchLayerVisibility(map: MapInstance, lights: boolean) {
-    let styleJson;
-
-    try {
-      styleJson = map.getStyle();
-    } catch {
-      return;
-    }
-
-    styleJson.layers.forEach((it: { id: string }) => {
-      if (!routeLayerIds.includes(it.id)) {
-        if (lights) map.setLayoutProperty(it.id, 'visibility', 'visible');
-        else map.setLayoutProperty(it.id, 'visibility', 'none');
-      }
-    });
-  }
-
-  // Apply layer visibility when lights setting changes
-  useEffect(() => {
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      // Add a small delay to ensure map is ready
-      setTimeout(() => {
-        try {
-          softenMapBaseLayers(map);
-          switchLayerVisibility(map, lights);
-        } catch (error) {
-          console.warn('Error switching layer visibility:', error);
-        }
-      }, 50);
-    }
-  }, [lights]);
-
   const mapRefCallback = useCallback(
     (ref: MapRef) => {
       if (ref !== null) {
@@ -377,19 +313,18 @@ const RunMap = ({
             });
           }
           softenMapBaseLayers(map);
-          switchLayerVisibility(map, lights);
+          showBaseLayers(map);
         });
       }
       if (mapRef.current) {
         const map = mapRef.current.getMap();
         softenMapBaseLayers(map);
-        switchLayerVisibility(map, lights);
+        showBaseLayers(map);
       }
     },
-    [mapRef, lights]
+    []
   );
 
-  const initGeoDataLength = geoData.features.length;
   const isBigMap = (viewState.zoom ?? 0) <= 3;
 
   useEffect(() => {
@@ -406,16 +341,16 @@ const RunMap = ({
     }
   }, [isBigMap, IS_CHINESE, mapGeoData, isLoadingMapData]);
 
-  let combinedGeoData = geoData;
-  if (isBigMap && IS_CHINESE && mapGeoData) {
-    // Show boundary and line together, combine geoData(only when not combine yet)
-    if (geoData.features.length === initGeoDataLength) {
-      combinedGeoData = {
+  const combinedGeoData = useMemo<FeatureCollection<RPGeometry>>(() => {
+    if (isBigMap && IS_CHINESE && mapGeoData) {
+      return {
         type: 'FeatureCollection',
         features: geoData.features.concat(mapGeoData.features),
       };
     }
-  }
+
+    return geoData;
+  }, [geoData, isBigMap, mapGeoData]);
 
   const isSingleRun =
     geoData.features.length === 1 &&
@@ -563,7 +498,7 @@ const RunMap = ({
       ref={mapRefCallback}
       interactive={false}
       cooperativeGestures={false}
-      mapboxAccessToken={mapboxAccessToken}
+      mapboxAccessToken={MAPBOX_TOKEN}
       attributionControl={false}
       onLoad={handleMapLoad}
     >
@@ -609,14 +544,14 @@ const RunMap = ({
               'case',
               ['==', ['get', 'dimmed'], true],
               0.9,
-              isBigMap && lights ? 1.3 : isSingleRun ? 2.35 : 2,
+              isBigMap ? 1.3 : isSingleRun ? 2.35 : 2,
             ],
             'line-dasharray': dash,
             'line-opacity': [
               'case',
               ['==', ['get', 'dimmed'], true],
               0.18,
-              isSingleRun || isBigMap || !lights ? 0.86 : 0.8,
+              isSingleRun || isBigMap ? 0.86 : 0.8,
             ],
             'line-blur': 0.35,
           }}
@@ -635,14 +570,14 @@ const RunMap = ({
               'case',
               ['==', ['get', 'dimmed'], true],
               0.85,
-              isBigMap && lights ? 1.2 : isSingleRun ? 2.1 : 1.85,
+              isBigMap ? 1.2 : isSingleRun ? 2.1 : 1.85,
             ],
             'line-dasharray': [2, 0],
             'line-opacity': [
               'case',
               ['==', ['get', 'dimmed'], true],
               0.1,
-              isSingleRun || isBigMap || !lights ? 0.55 : LINE_OPACITY * 0.55,
+              isSingleRun || isBigMap ? 0.55 : LINE_OPACITY * 0.55,
             ],
             'line-blur': 0.35,
           }}
