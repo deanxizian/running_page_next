@@ -23,6 +23,8 @@ const MetricCard = ({
   onClick,
   overlay,
   className,
+  onTouchRevealStart,
+  touchRevealResetSignal,
 }: {
   label: string;
   value: string;
@@ -38,9 +40,14 @@ const MetricCard = ({
   onClick?: () => void;
   overlay?: string;
   className?: string;
+  onTouchRevealStart?: () => void;
+  touchRevealResetSignal?: number;
 }) => {
   const { isTouchRevealActive, touchRevealHandlers } =
-    useTouchRevealAction(onClick);
+    useTouchRevealAction(onClick, {
+      onRevealStart: onTouchRevealStart,
+      resetSignal: touchRevealResetSignal,
+    });
   const cardClassName = [
     styles.metricCard,
     onClick ? styles.metricCardInteractive : '',

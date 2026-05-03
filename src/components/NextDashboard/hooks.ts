@@ -8,12 +8,16 @@ import {
 } from 'react';
 import { TOUCH_REVEAL_DURATION_MS } from './shared';
 
-const useTouchRevealAction = (action?: () => void) => {
+const useTouchRevealAction = (
+  action?: () => void,
+  options: { onRevealStart?: () => void; resetSignal?: number } = {}
+) => {
   const [isTouchRevealActive, setIsTouchRevealActive] = useState(false);
   const isTouchRevealActiveRef = useRef(false);
   const pendingTouchActionRef = useRef(false);
   const suppressNextClickRef = useRef(false);
   const touchRevealTimeoutRef = useRef<number | null>(null);
+  const { onRevealStart, resetSignal } = options;
 
   const clearTouchRevealTimeout = useCallback(() => {
     if (touchRevealTimeoutRef.current) {
@@ -25,10 +29,13 @@ const useTouchRevealAction = (action?: () => void) => {
   const hideTouchReveal = useCallback(() => {
     clearTouchRevealTimeout();
     isTouchRevealActiveRef.current = false;
+    pendingTouchActionRef.current = false;
+    suppressNextClickRef.current = false;
     setIsTouchRevealActive(false);
   }, [clearTouchRevealTimeout]);
 
   const showTouchReveal = useCallback(() => {
+    onRevealStart?.();
     clearTouchRevealTimeout();
     isTouchRevealActiveRef.current = true;
     setIsTouchRevealActive(true);
@@ -36,9 +43,13 @@ const useTouchRevealAction = (action?: () => void) => {
       hideTouchReveal,
       TOUCH_REVEAL_DURATION_MS
     );
-  }, [clearTouchRevealTimeout, hideTouchReveal]);
+  }, [clearTouchRevealTimeout, hideTouchReveal, onRevealStart]);
 
   useEffect(() => () => clearTouchRevealTimeout(), [clearTouchRevealTimeout]);
+
+  useEffect(() => {
+    hideTouchReveal();
+  }, [hideTouchReveal, resetSignal]);
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {

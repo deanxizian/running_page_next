@@ -74,10 +74,25 @@ const HomeView = ({
   const navigate = useNavigate();
   const openHeatmap = useCallback(() => navigate('/heatmap'), [navigate]);
   const openEvents = useCallback(() => navigate('/events'), [navigate]);
+  const [totalTouchRevealResetSignal, setTotalTouchRevealResetSignal] =
+    useState(0);
+  const [eventTouchRevealResetSignal, setEventTouchRevealResetSignal] =
+    useState(0);
+  const clearTotalTouchReveal = useCallback(
+    () => setTotalTouchRevealResetSignal((signal) => signal + 1),
+    []
+  );
+  const clearEventTouchReveal = useCallback(
+    () => setEventTouchRevealResetSignal((signal) => signal + 1),
+    []
+  );
   const {
     isTouchRevealActive: isEventTouchRevealActive,
     touchRevealHandlers: eventTouchRevealHandlers,
-  } = useTouchRevealAction(openEvents);
+  } = useTouchRevealAction(openEvents, {
+    onRevealStart: clearTotalTouchReveal,
+    resetSignal: eventTouchRevealResetSignal,
+  });
   const [yearFilter, setYearFilter] = useState(thisYear || 'All');
   const [page, setPage] = useState(0);
   const [selectedRun, setSelectedRun] = useState<Activity | null>(null);
@@ -516,6 +531,8 @@ const HomeView = ({
         stackDetails
         overlay="点击打开热力图"
         onClick={openHeatmap}
+        onTouchRevealStart={clearEventTouchReveal}
+        touchRevealResetSignal={totalTouchRevealResetSignal}
         className={styles.totalMetricCard}
       />
       <MetricCard
