@@ -637,7 +637,7 @@
   border-top: 1px solid rgba(63, 63, 70, 0.26);
   color: #d4d4d8;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -693,7 +693,44 @@
 .activityTable td span {
   margin-left: 5px;
   color: #71717a;
-  font-size: 11px;
+  font-size: 12px;
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .activityTable {
+    width: min(100%, 860px);
+    min-width: 680px;
+  }
+
+  .activityTable th:nth-child(1),
+  .activityTable td:nth-child(1) {
+    width: 20%;
+  }
+
+  .activityTable th:nth-child(2),
+  .activityTable td:nth-child(2) {
+    width: 17.6%;
+  }
+
+  .activityTable th:nth-child(3),
+  .activityTable td:nth-child(3) {
+    width: 18.4%;
+  }
+
+  .activityTable th:nth-child(4),
+  .activityTable td:nth-child(4) {
+    width: 19.2%;
+  }
+
+  .activityTable th:nth-child(5),
+  .activityTable td:nth-child(5) {
+    width: 14.8%;
+  }
+
+  .activityTable th:nth-child(6),
+  .activityTable td:nth-child(6) {
+    width: 10%;
+  }
 }
 
 .activityTable .activityDateCell {
@@ -712,7 +749,7 @@
   display: block;
   margin-top: 3px;
   color: #71717a;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
 }
 
@@ -1889,22 +1926,22 @@
   .activityTable th,
   .activityTable td {
     padding: 12px var(--activity-cell-x);
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .activityTable td span {
     margin-left: 2px;
-    font-size: 11px;
+    font-size: 11.5px;
   }
 
   .activityTable .activityDateCell span {
     margin-left: 0;
-    font-size: 10px;
+    font-size: 11px;
     white-space: nowrap;
   }
 
   .activityTable .activityDateCell small {
-    font-size: 10px;
+    font-size: 10.5px;
   }
 
   .eventCards {
