@@ -62,6 +62,9 @@ def point_in_list_points_range(
 def range_hiding(
     polyline: List[Tuple[float]], points: List[Tuple[float]], distance: int
 ) -> List[Tuple[float]]:
+    if distance <= 0 or not points:
+        return polyline
+
     return [
         point
         for point in polyline
@@ -70,6 +73,9 @@ def range_hiding(
 
 
 def start_end_hiding(polyline: List[Tuple[float]], distance: int) -> List[Tuple[float]]:
+    if distance <= 0:
+        return polyline
+
     start_index, end_index = 0, len(polyline) - 1
 
     starting_distance = 0
@@ -94,14 +100,21 @@ def start_end_hiding(polyline: List[Tuple[float]], distance: int) -> List[Tuple[
 
 def filter_out(polyline_str):
     if not polyline_str:
-        return
+        return polyline_str
+    if (
+        IGNORE_START_END_RANGE <= 0
+        and (not IGNORE_POLYLINE or IGNORE_RANGE <= 0)
+    ):
+        return polyline_str
+
     pl = polyline.decode(polyline_str)
     if not pl:
         return polyline_str
 
-    new_pl = start_end_hiding(pl, IGNORE_START_END_RANGE)
+    new_pl = pl
+    new_pl = start_end_hiding(new_pl, IGNORE_START_END_RANGE)
     new_pl = range_hiding(new_pl, IGNORE_POLYLINE, IGNORE_RANGE)
 
     if not new_pl:
-        return
+        return ""
     return polyline.encode(new_pl)
