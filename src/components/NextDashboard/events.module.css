@@ -1,0 +1,354 @@
+@keyframes moduleFadeIn {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.eventsMain {
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.eventYearGroup {
+  animation: moduleFadeIn 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 130ms;
+}
+
+.eventYearGroup:nth-child(2) {
+  animation-delay: 190ms;
+}
+
+.eventYearGroup:nth-child(3) {
+  animation-delay: 250ms;
+}
+
+.eventYearGroup:nth-child(n + 4) {
+  animation-delay: 310ms;
+}
+
+.eventGroups {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+.eventYearHeader {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.eventYearHeader strong {
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 78px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.eventYearHeader span {
+  color: #e31937;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.eventYearHeader small {
+  margin-left: auto;
+  color: #a1a1aa;
+}
+
+.eventCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.eventCard {
+  position: relative;
+  min-height: 162px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  padding: 24px 22px;
+  background: #18181b;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.eventCardPreviewed {
+  border-color: rgba(227, 25, 55, 0.55);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -18px rgba(227, 25, 55, 0.8);
+}
+
+.eventCardPb {
+  background: linear-gradient(135deg, rgba(227, 25, 55, 0.24), transparent 56%),
+    #18181b;
+  box-shadow: 0 0 26px -18px rgba(227, 25, 55, 0.9);
+}
+
+.eventRouteBackground {
+  position: absolute;
+  inset: 14px 16px 12px;
+  z-index: 0;
+  width: calc(100% - 32px);
+  height: calc(100% - 26px);
+  opacity: 0.14;
+  overflow: visible;
+  pointer-events: none;
+  transform: scale(1.04);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.eventRouteBackground path {
+  fill: none;
+  stroke: #e31937;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(227, 25, 55, 0.42));
+}
+
+.eventCardPreviewed .eventRouteBackground {
+  opacity: 0.22;
+  transform: scale(1.08);
+}
+
+.eventCard > span:not(.eventPbBadge),
+.eventCard strong,
+.eventCard small {
+  position: relative;
+  z-index: 1;
+}
+
+.eventCard > span:not(.eventPbBadge) {
+  color: #e31937;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.eventPbBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e31937;
+  color: #fff !important;
+  font-size: 11px !important;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 0 18px -6px rgba(227, 25, 55, 0.9);
+}
+
+.eventPbMedal {
+  width: 13px;
+  height: 16px;
+  color: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
+}
+
+.eventCard strong {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.eventCard small {
+  color: #a1a1aa;
+  font-family: var(--font-mono);
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  border: 0;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.42);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
+  backdrop-filter: blur(18px) saturate(1.18);
+  animation: modalBackdropIn 0.38s ease forwards;
+}
+
+.modalBackdropClosing {
+  animation: modalBackdropOut 0.36s ease forwards;
+}
+
+.eventModal {
+  border: 1px solid #27272a;
+  border-radius: 24px;
+  background: #18181b;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.eventModal small {
+  color: #71717a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventModal strong {
+  color: #fff;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.eventModal span {
+  color: #d4d4d8;
+  font-family: var(--font-mono);
+}
+
+.eventModal {
+  box-sizing: border-box;
+  width: min(100%, 668px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: eventModalIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.eventModalClosing {
+  animation: eventModalOut 0.34s ease forwards;
+}
+
+.eventModalMap {
+  height: 260px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.eventModalMap :global(.mapboxgl-map) {
+  border-radius: 16px;
+}
+
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalBackdropOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes eventModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes eventModalOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .eventCard:hover {
+    border-color: rgba(227, 25, 55, 0.55);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -18px rgba(227, 25, 55, 0.8);
+  }
+
+  .eventCard:hover .eventRouteBackground {
+    opacity: 0.22;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventYearGroup,
+  .eventCard,
+  .modalBackdrop,
+  .eventModal {
+    animation: none;
+    translate: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 1120px) {
+  .eventCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .eventCards {
+    grid-template-columns: 1fr;
+  }
+
+  .eventYearHeader {
+    flex-direction: column;
+  }
+
+  .eventYearHeader strong {
+    font-size: 52px;
+  }
+}

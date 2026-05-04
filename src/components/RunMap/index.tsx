@@ -6,12 +6,12 @@ import {
   useMemo,
 } from 'react';
 import type { CSSProperties } from 'react';
-import Map, {
+import ReactMap, {
   Layer,
   Source,
 } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl';
-import type { MapInstance } from 'react-map-gl/src/types/lib';
+import type { AnyLayer, Map as MapboxMap } from 'mapbox-gl';
 import useActivities from '@/hooks/useActivities';
 import {
   IS_CHINESE,
@@ -49,12 +49,6 @@ const RUNNING_LAYER_IDS = new Set([
 const ROUTE_LAYER_IDS = new Set(['runs2', 'runs2-indoor']);
 const DEFAULT_MAP_HEIGHT = 600;
 
-type MapStyleLayer = {
-  id: string;
-  type?: string;
-  layout?: Record<string, unknown>;
-};
-
 const CAMERA_TRANSITION_MS = 1080;
 
 const easeOutCamera = (progress: number) =>
@@ -64,21 +58,21 @@ const cameraValue = (value: number | undefined) =>
   Number.isFinite(value) ? value! : null;
 
 const setBasePaintProperty = (
-  map: MapInstance,
+  map: MapboxMap,
   layerId: string,
   property: string,
   value: unknown
 ) => {
   try {
     if (map.getLayer(layerId)) {
-      map.setPaintProperty(layerId, property, value as any);
+      map.setPaintProperty(layerId, property, value);
     }
   } catch {
     // Third-party styles differ by layer type. Unsupported paint properties can be ignored.
   }
 };
 
-const softenMapBaseLayers = (map: MapInstance) => {
+const softenMapBaseLayers = (map: MapboxMap) => {
   let styleJson;
 
   try {
@@ -87,7 +81,7 @@ const softenMapBaseLayers = (map: MapInstance) => {
     return;
   }
 
-  const layers = styleJson.layers as MapStyleLayer[] | undefined;
+  const layers = styleJson.layers as AnyLayer[] | undefined;
 
   if (!layers?.length) {
     return false;
@@ -174,7 +168,7 @@ const softenMapBaseLayers = (map: MapInstance) => {
   return true;
 };
 
-const showBaseLayers = (map: MapInstance) => {
+const showBaseLayers = (map: MapboxMap) => {
   let styleJson;
 
   try {
@@ -183,7 +177,7 @@ const showBaseLayers = (map: MapInstance) => {
     return;
   }
 
-  styleJson.layers.forEach((layer: { id: string }) => {
+  styleJson.layers?.forEach((layer: { id: string }) => {
     try {
       if (!ROUTE_LAYER_IDS.has(layer.id) && map.getLayer(layer.id)) {
         map.setLayoutProperty(layer.id, 'visibility', 'visible');
@@ -203,7 +197,7 @@ const RunMap = ({
   animateCamera = true,
 }: RunMapProps) => {
   const { countries, provinces } = useActivities();
-  const mapRef = useRef<MapRef>(null);
+  const mapRef = useRef<MapRef | null>(null);
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
   const mapListenerCleanupRef = useRef<(() => void) | null>(null);
@@ -249,7 +243,7 @@ const RunMap = ({
   }, []);
 
   const scheduleBaseStyleReveal = useCallback(
-    (map: MapInstance) => {
+    (map: MapboxMap) => {
       if (
         hasRevealedBaseStyleRef.current ||
         baseStyleRevealCleanupRef.current
@@ -273,7 +267,7 @@ const RunMap = ({
     [revealBaseStyle]
   );
 
-  const scheduleBaseStyleRefresh = useCallback((map: MapInstance) => {
+  const scheduleBaseStyleRefresh = useCallback((map: MapboxMap) => {
     if (styleRefreshFrameRef.current !== null) {
       return;
     }
@@ -515,7 +509,7 @@ const RunMap = ({
       className={styles.mapFrame}
       style={frameStyle}
     >
-      <Map
+      <ReactMap
         initialViewState={viewState}
         style={mapStyle}
         mapStyle={MAP_STYLE_URL}
@@ -604,7 +598,7 @@ const RunMap = ({
             filter={['==', ['get', 'indoor'], true]}
           />
         </Source>
-      </Map>
+      </ReactMap>
       <div
         aria-hidden="true"
         className={`${styles.mapBaseShield} ${

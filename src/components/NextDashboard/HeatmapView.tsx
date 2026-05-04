@@ -5,6 +5,7 @@ import {
 } from 'react';
 import type { ActivityGroups } from '@/hooks/useActivities';
 import type { Activity } from '@/utils/utils';
+import { DIST_UNIT } from '@/utils/utils';
 import {
   EMPTY_ACTIVITIES,
   getMondayFirstDayIndex,
@@ -14,7 +15,8 @@ import {
   formatDurationShort,
 } from './shared';
 import { useTouchPreview } from './hooks';
-import styles from './style.module.css';
+import sharedStyles from './style.module.css';
+import styles from './heatmap.module.css';
 
 const HeatmapView = ({
   years,
@@ -91,7 +93,7 @@ const HeatmapView = ({
   );
 
   return (
-    <main className={styles.main}>
+    <main className={sharedStyles.main}>
       <section className={styles.heatmapPage}>
         <div className={styles.heatmapPageHeader}>
           <div className={styles.heatmapTotalStats}>
@@ -101,7 +103,7 @@ const HeatmapView = ({
             </span>
             <span>
               <strong>{totalStats.distance.toFixed(0)}</strong>
-              <small>km</small>
+              <small>{DIST_UNIT}</small>
             </span>
             <span>
               <strong>{formatRoundedHours(totalStats.seconds)}</strong>
@@ -114,18 +116,22 @@ const HeatmapView = ({
           {yearlyHeatmaps.map((yearHeatmap) => (
             <section
               key={yearHeatmap.year}
-              className={`${styles.panel} ${styles.heatmapYearBlock}`}
+              className={`${sharedStyles.panel} ${styles.heatmapYearBlock}`}
             >
               <div className={styles.heatmapYearHeader}>
                 <strong>{yearHeatmap.year}</strong>
                 <div className={styles.heatStats}>
                   <div className={styles.heatStatsPrimary}>
                     <span>{yearHeatmap.stats.count} runs</span>
-                    <span>{yearHeatmap.stats.distance.toFixed(0)} km</span>
+                    <span>
+                      {yearHeatmap.stats.distance.toFixed(0)} {DIST_UNIT}
+                    </span>
                     <span>{formatDurationShort(yearHeatmap.stats.seconds)}</span>
                   </div>
                   <div className={styles.heatStatsSecondary}>
-                    <span>{yearHeatmap.stats.avgPace} /km</span>
+                    <span>
+                      {yearHeatmap.stats.avgPace} /{DIST_UNIT}
+                    </span>
                     <span>{yearHeatmap.stats.avgHeartRate || '-'} bpm</span>
                   </div>
                 </div>
@@ -157,7 +163,7 @@ const HeatmapView = ({
                           : ''
                       }`}
                       data-heat-key={cell.inYear ? cell.key : undefined}
-                      title={`${cell.key}: ${cell.distance.toFixed(2)} km`}
+                      title={`${cell.key}: ${cell.distance.toFixed(2)} ${DIST_UNIT}`}
                       onPointerDown={(event) => {
                         if (event.pointerType !== 'mouse' && cell.inYear) {
                           previewHeatmapCell(cell.key);

@@ -22,15 +22,21 @@
     "data:sync:strava": "python3 run_page/strava_sync.py \"$STRAVA_CLIENT_ID\" \"$STRAVA_CLIENT_SECRET\" \"$STRAVA_CLIENT_REFRESH_TOKEN\" --only-run",
     "build": "vite build",
     "dev": "vite dev",
+    "typecheck": "tsc --noEmit",
     "serve": "vite preview"
   },
   "engineStrict": true,
   "browserslist": "defaults, not ie 11",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "devDependencies": {
+    "@types/mapbox-gl": "^2.7.13",
+    "@types/node": "^24.10.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.9.2",
     "vite": "^7.1.2"
   }
 }

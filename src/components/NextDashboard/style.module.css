@@ -186,9 +186,7 @@
 }
 
 .panel,
-.metricCard,
-.heatmapPageHeader,
-.eventYearGroup {
+.metricCard {
   animation: moduleFadeIn 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -211,6 +209,15 @@
   flex-direction: column;
 }
 
+.loadingPanel {
+  padding: 32px;
+  color: #a1a1aa;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .rightColumn > .eventPanel {
   animation-delay: 120ms;
 }
@@ -226,42 +233,6 @@
 .rightColumn > .chartPanel {
   animation-delay: 350ms;
   flex: 1 1 auto;
-}
-
-.heatmapPageHeader {
-  animation-delay: 40ms;
-}
-
-.heatmapYearList .heatmapYearBlock:nth-child(1) {
-  animation-delay: 130ms;
-}
-
-.heatmapYearList .heatmapYearBlock:nth-child(2) {
-  animation-delay: 190ms;
-}
-
-.heatmapYearList .heatmapYearBlock:nth-child(3) {
-  animation-delay: 250ms;
-}
-
-.heatmapYearList .heatmapYearBlock:nth-child(n + 4) {
-  animation-delay: 310ms;
-}
-
-.eventYearGroup {
-  animation-delay: 130ms;
-}
-
-.eventYearGroup:nth-child(2) {
-  animation-delay: 190ms;
-}
-
-.eventYearGroup:nth-child(3) {
-  animation-delay: 250ms;
-}
-
-.eventYearGroup:nth-child(n + 4) {
-  animation-delay: 310ms;
 }
 
 .panel,
@@ -418,21 +389,6 @@
     transform: translateY(0);
   }
 
-  .heatCell:hover {
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
-    transform: scale(1.04);
-  }
-
-  .eventCard:hover {
-    border-color: rgba(227, 25, 55, 0.55);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px -18px rgba(227, 25, 55, 0.8);
-  }
-
-  .eventCard:hover .eventRouteBackground {
-    opacity: 0.22;
-    transform: scale(1.08);
-  }
 }
 
 .metricValue {
@@ -893,8 +849,7 @@
   background: #202124;
 }
 
-.mapPanel :global(.mapboxgl-map),
-.eventModalMap :global(.mapboxgl-map) {
+.mapPanel :global(.mapboxgl-map) {
   border-radius: 16px;
 }
 
@@ -1194,464 +1149,6 @@
   white-space: nowrap;
 }
 
-.heatStats {
-  display: flex;
-  gap: 16px;
-  color: #a1a1aa;
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.heatmapWrap {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-}
-
-.heatmapPage {
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
-}
-
-.heatmapPageHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 24px;
-}
-
-.heatmapTotalStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(112px, 1fr));
-  gap: 10px;
-}
-
-.heatmapTotalStats span {
-  min-width: 0;
-  border: 1px solid rgba(63, 63, 70, 0.74);
-  border-radius: 12px;
-  padding: 14px 16px;
-  background: rgba(24, 24, 27, 0.84);
-  box-shadow: 0 0 18px -14px rgba(227, 25, 55, 0.42);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.heatmapTotalStats strong {
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.heatmapTotalStats small {
-  color: #e31937;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.heatmapYearList {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.heatmapYearBlock {
-  padding: 24px;
-}
-
-.heatmapYearBlock .heatmapWrap {
-  justify-content: flex-start;
-}
-
-.heatmapYearHeader {
-  margin-bottom: 16px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 18px;
-}
-
-.heatmapYearHeader strong {
-  justify-self: start;
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.heatmapYearHeader .heatStats {
-  min-width: 0;
-  justify-self: end;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  text-align: right;
-}
-
-.heatStatsPrimary,
-.heatStatsSecondary {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.heatStatsPrimary {
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
-}
-
-.heatStatsSecondary {
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
-}
-
-.heatmapYearHeader .heatStats span {
-  border: 1px solid rgba(63, 63, 70, 0.72);
-  border-radius: 999px;
-  padding: 7px 11px;
-  background: rgba(39, 39, 42, 0.58);
-  color: #f4f4f5;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.yearHeatmap {
-  width: 100%;
-  padding: 2px 0;
-  display: grid;
-  grid-template-rows: repeat(7, minmax(0, 1fr));
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 4px;
-}
-
-.heatCell {
-  width: 100%;
-  height: 100%;
-  border-radius: 22%;
-  transition:
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
-}
-
-.heatCellPreviewed {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
-  transform: scale(1.04);
-}
-
-.heatOutside {
-  background: transparent;
-}
-
-.heatEmpty {
-  background: #27272a;
-}
-
-.heatLevelOne {
-  background: #075985;
-}
-
-.heatLevelTwo {
-  background: #0284c7;
-}
-
-.heatLevelThree {
-  background: #ca8a04;
-}
-
-.heatLevelFour {
-  background: #e31937;
-}
-
-.eventsMain {
-  max-width: none;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.eventGroups {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px 24px 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 80px;
-}
-
-.eventYearHeader {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 18px;
-  margin-bottom: 26px;
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-}
-
-.eventYearHeader strong {
-  color: rgba(255, 255, 255, 0.12);
-  font-size: 78px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.eventYearHeader span {
-  color: #e31937;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.eventYearHeader small {
-  margin-left: auto;
-  color: #a1a1aa;
-}
-
-.eventCards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.eventCard {
-  position: relative;
-  min-height: 162px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 18px;
-  padding: 24px 22px;
-  background: #18181b;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  overflow: hidden;
-  transition:
-    transform 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-.eventCardPreviewed {
-  border-color: rgba(227, 25, 55, 0.55);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px -18px rgba(227, 25, 55, 0.8);
-}
-
-.eventCardPb {
-  background: linear-gradient(135deg, rgba(227, 25, 55, 0.24), transparent 56%),
-    #18181b;
-  box-shadow: 0 0 26px -18px rgba(227, 25, 55, 0.9);
-}
-
-.eventRouteBackground {
-  position: absolute;
-  inset: 14px 16px 12px;
-  z-index: 0;
-  width: calc(100% - 32px);
-  height: calc(100% - 26px);
-  opacity: 0.14;
-  overflow: visible;
-  pointer-events: none;
-  transform: scale(1.04);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-}
-
-.eventRouteBackground path {
-  fill: none;
-  stroke: #e31937;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-  filter: drop-shadow(0 0 5px rgba(227, 25, 55, 0.42));
-}
-
-.eventCardPreviewed .eventRouteBackground {
-  opacity: 0.22;
-  transform: scale(1.08);
-}
-
-.eventCard > span:not(.eventPbBadge),
-.eventCard strong,
-.eventCard small {
-  position: relative;
-  z-index: 1;
-}
-
-.eventCard > span:not(.eventPbBadge) {
-  color: #e31937;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.eventPbBadge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: #e31937;
-  color: #fff !important;
-  font-size: 11px !important;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 0 18px -6px rgba(227, 25, 55, 0.9);
-}
-
-.eventPbMedal {
-  width: 13px;
-  height: 16px;
-  color: currentColor;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex: 0 0 auto;
-}
-
-.eventCard strong {
-  color: #fff;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.eventCard small {
-  color: #a1a1aa;
-  font-family: var(--font-mono);
-}
-
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  border: 0;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.42);
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-backdrop-filter: blur(18px) saturate(1.18);
-  backdrop-filter: blur(18px) saturate(1.18);
-  animation: modalBackdropIn 0.38s ease forwards;
-}
-
-.modalBackdropClosing {
-  animation: modalBackdropOut 0.36s ease forwards;
-}
-
-.eventModal {
-  border: 1px solid #27272a;
-  border-radius: 24px;
-  background: #18181b;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  cursor: default;
-}
-
-.eventModal small {
-  color: #71717a;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.eventModal strong {
-  color: #fff;
-  font-size: 30px;
-  font-weight: 900;
-}
-
-.eventModal span {
-  color: #d4d4d8;
-  font-family: var(--font-mono);
-}
-
-.eventModal {
-  box-sizing: border-box;
-  width: min(100%, 668px);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: eventModalIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.eventModalClosing {
-  animation: eventModalOut 0.34s ease forwards;
-}
-
-.eventModalMap {
-  height: 260px;
-  margin-top: 8px;
-  overflow: hidden;
-  border-radius: 16px;
-}
-
-@keyframes modalBackdropIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modalBackdropOut {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes eventModalIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes eventModalOut {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(8px) scale(0.985);
-  }
-}
-
 .footer {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 48px 24px;
@@ -1664,12 +1161,7 @@
 @media (prefers-reduced-motion: reduce) {
   .panel,
   .metricCard,
-  .heatmapPageHeader,
-  .eventYearGroup,
-  .eventCard,
   .activityRow,
-  .modalBackdrop,
-  .eventModal,
   .calendarSlideForward,
   .calendarSlideBackward {
     animation: none;
@@ -1722,9 +1214,6 @@
     grid-column: 1 / -1;
   }
 
-  .eventCards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 760px) {
@@ -1896,10 +1385,6 @@
     font-size: 10.5px;
   }
 
-  .eventCards {
-    grid-template-columns: 1fr;
-  }
-
   .eventPanel,
   .mapPanel {
     grid-column: span 1;
@@ -1947,15 +1432,6 @@
     gap: 4px;
   }
 
-  .eventYearHeader,
-  .heatmapPageHeader {
-    flex-direction: column;
-  }
-
-  .eventYearHeader strong {
-    font-size: 52px;
-  }
-
   .footer {
     padding: 28px 18px 34px;
     font-size: 12px;
@@ -1971,54 +1447,6 @@
 @media (max-width: 340px) {
   .navLinks {
     font-size: 11px;
-  }
-}
-
-@media (max-width: 700px) {
-  .yearHeatmap {
-    gap: 2px;
-  }
-
-  .heatmapYearHeader {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .heatmapYearHeader .heatStats {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  .heatStatsPrimary,
-  .heatStatsSecondary {
-    display: grid;
-    justify-content: end;
-    gap: 4px;
-  }
-
-  .heatStatsPrimary {
-    grid-template-columns: repeat(3, max-content);
-  }
-
-  .heatStatsSecondary {
-    grid-template-columns: repeat(2, max-content);
-  }
-
-  .heatmapYearHeader .heatStats span {
-    padding: 4px 6px;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 360px) {
-  .heatmapYearHeader {
-    grid-template-columns: 1fr;
-  }
-
-  .heatmapYearHeader .heatStats {
-    width: 100%;
   }
 }
 

@@ -212,36 +212,6 @@ const RouteSpark = ({ run }: { run: Activity }) => {
   );
 };
 
-const EventRouteBackground = ({ run }: { run: Activity }) => {
-  const d = getRoutePath(run, 160, 96);
-  if (!d) {
-    return null;
-  }
-
-  return (
-    <svg
-      className={styles.eventRouteBackground}
-      viewBox="0 0 160 96"
-      aria-hidden="true"
-    >
-      <path d={d} />
-    </svg>
-  );
-};
-
-const EventPbMedalIcon = () => (
-  <svg
-    className={styles.eventPbMedal}
-    viewBox="0 0 18 22"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path d="M4.3 1.8h4.1l1.1 5.1-2.7 2.4L4.3 1.8Z" />
-    <path d="M9.6 1.8h4.1l-2.5 7.5-2.7-2.4 1.1-5.1Z" />
-    <circle cx="9" cy="14.6" r="5.4" />
-  </svg>
-);
-
 const ChevronIcon = ({ direction }: { direction: 'left' | 'right' }) => (
   <svg
     className={styles.navArrowIcon}
@@ -320,7 +290,7 @@ const PageShell = ({
       </nav>
       {children}
       <footer className={styles.footer}>
-        © {thisYear} Running Page. All miles counted.
+        © {thisYear} Running Page. All kilometers counted.
       </footer>
     </div>
   );
@@ -329,8 +299,6 @@ const PageShell = ({
 export {
   MetricCard,
   RouteSpark,
-  EventRouteBackground,
-  EventPbMedalIcon,
   ChevronIcon,
   PageShell,
 };

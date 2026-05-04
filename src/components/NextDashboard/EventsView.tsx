@@ -9,6 +9,7 @@ import {
 import RunMap from '@/components/RunMap/LazyRunMap';
 import type { Activity } from '@/utils/utils';
 import {
+  DIST_UNIT,
   M_TO_DIST,
   convertMovingTime2Sec,
   formatPace,
@@ -23,14 +24,42 @@ import {
   formatDuration,
   getEventModalMapViewport,
   getEventModalViewState,
+  getRoutePath,
 } from './shared';
 import { useTouchPreview } from './hooks';
-import {
-  EventRouteBackground,
-  EventPbMedalIcon,
-} from './ui';
 import type { RacePbCategory } from './shared';
-import styles from './style.module.css';
+import sharedStyles from './style.module.css';
+import styles from './events.module.css';
+
+const EventRouteBackground = ({ run }: { run: Activity }) => {
+  const d = getRoutePath(run, 160, 96);
+  if (!d) {
+    return null;
+  }
+
+  return (
+    <svg
+      className={styles.eventRouteBackground}
+      viewBox="0 0 160 96"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  );
+};
+
+const EventPbMedalIcon = () => (
+  <svg
+    className={styles.eventPbMedal}
+    viewBox="0 0 18 22"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M4.3 1.8h4.1l1.1 5.1-2.7 2.4L4.3 1.8Z" />
+    <path d="M9.6 1.8h4.1l-2.5 7.5-2.7-2.4 1.1-5.1Z" />
+    <circle cx="9" cy="14.6" r="5.4" />
+  </svg>
+);
 
 const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
   const [selectedEvent, setSelectedEvent] = useState<Activity | null>(null);
@@ -235,7 +264,7 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
   }, [closeEventModal, isEventModalOpen]);
 
   return (
-    <main className={`${styles.main} ${styles.eventsMain}`}>
+    <main className={`${sharedStyles.main} ${styles.eventsMain}`}>
       <section className={styles.eventGroups}>
         {groupedEvents.map(([year, runs]) => (
           <div key={year} className={styles.eventYearGroup}>
@@ -285,8 +314,7 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
                       <span>{run.start_date_local.slice(0, 10)}</span>
                       <strong>{activityTitleForRun(run)}</strong>
                       <small>
-                        {(run.distance / M_TO_DIST).toFixed(2)} km ·{' '}
-                        {formatPace(run.average_speed)}
+                        {formatDuration(convertMovingTime2Sec(run.moving_time))}
                       </small>
                     </button>
                   );
@@ -317,7 +345,8 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
               {activityTitleForRun(selectedEvent)}
             </strong>
             <span>
-              {(selectedEvent.distance / M_TO_DIST).toFixed(2)} km ·{' '}
+              距离 {(selectedEvent.distance / M_TO_DIST).toFixed(2)} {DIST_UNIT}{' '}
+              · 配速 {formatPace(selectedEvent.average_speed)} /{DIST_UNIT} · 时间{' '}
               {formatDuration(convertMovingTime2Sec(selectedEvent.moving_time))}
             </span>
             <span className={styles.eventModalMap}>

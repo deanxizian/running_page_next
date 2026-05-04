@@ -1,10 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import type { Activity } from '@/utils/utils';
 import { locationForRun, sortDateFunc } from '@/utils/utils';
-import rawActivities from '@/static/activities.json';
 import { COUNTRY_STANDARDIZATION } from '@/static/city';
-
-const activities = rawActivities as Activity[];
 
 export type ActivityGroups = {
   byDate: Map<string, Activity[]>;
@@ -26,6 +23,26 @@ type ProcessedActivities = {
 };
 
 let processedActivitiesCache: ProcessedActivities | null = null;
+let processedActivitiesPromise: Promise<ProcessedActivities> | null = null;
+
+const EMPTY_ACTIVITY_GROUPS: ActivityGroups = {
+  byDate: new Map(),
+  byMonth: new Map(),
+  byYear: new Map(),
+};
+
+const EMPTY_PROCESSED_ACTIVITIES: ProcessedActivities = {
+  activities: [],
+  sortedActivities: [],
+  activityGroups: EMPTY_ACTIVITY_GROUPS,
+  years: [],
+  countries: [],
+  provinces: [],
+  thisYear: '',
+  latestRun: null,
+  latestMonth: '',
+  earliestMonth: '',
+};
 
 const standardizeCountryName = (country: string): string => {
   for (const [pattern, standardName] of COUNTRY_STANDARDIZATION) {
@@ -54,7 +71,7 @@ const groupActivities = (runs: Activity[]): ActivityGroups => {
   return { byDate, byMonth, byYear };
 };
 
-const buildProcessedActivities = (): ProcessedActivities => {
+const buildProcessedActivities = (activities: Activity[]): ProcessedActivities => {
   const provinces: Set<string> = new Set();
   const countries: Set<string> = new Set();
   const years: Set<string> = new Set();
@@ -89,13 +106,63 @@ const buildProcessedActivities = (): ProcessedActivities => {
   };
 };
 
+const loadProcessedActivities = () => {
+  if (processedActivitiesCache) {
+    return Promise.resolve(processedActivitiesCache);
+  }
+
+  if (!processedActivitiesPromise) {
+    processedActivitiesPromise = import('@/static/activities.json').then(
+      (module) => {
+        const processed = buildProcessedActivities(module.default as Activity[]);
+        processedActivitiesCache = processed;
+        return processed;
+      }
+    );
+  }
+
+  return processedActivitiesPromise;
+};
+
 const useActivities = () => {
-  return useMemo(() => {
-    if (!processedActivitiesCache) {
-      processedActivitiesCache = buildProcessedActivities();
+  const [processedActivities, setProcessedActivities] =
+    useState<ProcessedActivities | null>(processedActivitiesCache);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (processedActivities) {
+      return undefined;
     }
-    return processedActivitiesCache;
-  }, []);
+
+    let isMounted = true;
+
+    loadProcessedActivities()
+      .then((nextActivities) => {
+        if (isMounted) {
+          setProcessedActivities(nextActivities);
+          setError(null);
+        }
+      })
+      .catch((nextError: unknown) => {
+        if (isMounted) {
+          setError(
+            nextError instanceof Error
+              ? nextError
+              : new Error('Failed to load activities')
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [processedActivities]);
+
+  return {
+    ...(processedActivities ?? EMPTY_PROCESSED_ACTIVITIES),
+    isLoading: !processedActivities && !error,
+    error,
+  };
 };
 
 export default useActivities;

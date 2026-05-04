@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useActivities from '@/hooks/useActivities';
 import NotFoundPage from '@/pages/404';
-import HomeView from './HomeView';
-import HeatmapView from './HeatmapView';
-import EventsView from './EventsView';
 import { PageShell } from './ui';
+import styles from './style.module.css';
+
+const HomeView = lazy(() => import('./HomeView'));
+const HeatmapView = lazy(() => import('./HeatmapView'));
+const EventsView = lazy(() => import('./EventsView'));
 
 type DashboardView = 'home' | 'heatmap' | 'events';
 type DashboardRouteView = DashboardView | 'redirect-events' | 'not-found';
@@ -13,6 +15,8 @@ type DashboardRouteView = DashboardView | 'redirect-events' | 'not-found';
 interface NextDashboardProps {
   view?: DashboardView;
 }
+
+const currentYear = () => new Date().getFullYear().toString();
 
 const dashboardViewForPath = (pathname: string): DashboardRouteView => {
   if (pathname === '/') {
@@ -34,9 +38,15 @@ const dashboardViewForPath = (pathname: string): DashboardRouteView => {
   return 'not-found';
 };
 
-const NextDashboard = ({ view }: NextDashboardProps) => {
-  const location = useLocation();
-  const currentView = view ?? dashboardViewForPath(location.pathname);
+const DashboardLoading = ({ message }: { message: string }) => (
+  <main className={styles.main}>
+    <section className={`${styles.panel} ${styles.loadingPanel}`}>
+      {message}
+    </section>
+  </main>
+);
+
+const DashboardDataView = ({ currentView }: { currentView: DashboardView }) => {
   const {
     years,
     thisYear,
@@ -45,7 +55,58 @@ const NextDashboard = ({ view }: NextDashboardProps) => {
     latestRun,
     latestMonth,
     earliestMonth,
+    isLoading,
+    error,
   } = useActivities();
+
+  if (isLoading) {
+    return (
+      <PageShell thisYear={thisYear || currentYear()}>
+        <DashboardLoading message="Loading activities..." />
+      </PageShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageShell thisYear={thisYear || currentYear()}>
+        <DashboardLoading message="Unable to load activities." />
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell thisYear={thisYear || currentYear()}>
+      <Suspense fallback={<DashboardLoading message="Loading view..." />}>
+        {currentView === 'home' && (
+          <HomeView
+            years={years}
+            thisYear={thisYear}
+            sortedActivities={sortedActivities}
+            activityGroups={activityGroups}
+            latestRun={latestRun}
+            latestMonth={latestMonth}
+            earliestMonth={earliestMonth}
+          />
+        )}
+        {currentView === 'heatmap' && (
+          <HeatmapView
+            years={years}
+            sortedActivities={sortedActivities}
+            activityGroups={activityGroups}
+          />
+        )}
+        {currentView === 'events' && (
+          <EventsView sortedActivities={sortedActivities} />
+        )}
+      </Suspense>
+    </PageShell>
+  );
+};
+
+const NextDashboard = ({ view }: NextDashboardProps) => {
+  const location = useLocation();
+  const currentView = view ?? dashboardViewForPath(location.pathname);
 
   useEffect(() => {
     document.documentElement.lang = 'en';
@@ -61,31 +122,7 @@ const NextDashboard = ({ view }: NextDashboardProps) => {
     return <NotFoundPage />;
   }
 
-  return (
-    <PageShell thisYear={thisYear}>
-      {currentView === 'home' && (
-        <HomeView
-          years={years}
-          thisYear={thisYear}
-          sortedActivities={sortedActivities}
-          activityGroups={activityGroups}
-          latestRun={latestRun}
-          latestMonth={latestMonth}
-          earliestMonth={earliestMonth}
-        />
-      )}
-      {currentView === 'heatmap' && (
-        <HeatmapView
-          years={years}
-          sortedActivities={sortedActivities}
-          activityGroups={activityGroups}
-        />
-      )}
-      {currentView === 'events' && (
-        <EventsView sortedActivities={sortedActivities} />
-      )}
-    </PageShell>
-  );
+  return <DashboardDataView currentView={currentView} />;
 };
 
 export default NextDashboard;

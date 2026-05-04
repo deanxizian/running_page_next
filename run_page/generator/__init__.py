@@ -8,12 +8,7 @@ import polyline as polyline_codec
 import stravalib
 from sqlalchemy import func
 
-from polyline_processor import filter_out
-
 from .db import Activity, init_db, update_or_create_activity
-
-IGNORE_BEFORE_SAVING = os.getenv("IGNORE_BEFORE_SAVING", False)
-
 
 # Bounding box spread threshold (degrees) for indoor activity detection.
 # 0.002° ≈ 220m, which covers treadmill GPS drift.
@@ -169,11 +164,6 @@ class Generator:
         for activity in self.client.get_activities(**filters):
             if self.only_run and activity.type != "Run":
                 continue
-            if IGNORE_BEFORE_SAVING:
-                if activity.map and activity.map.summary_polyline:
-                    activity.map.summary_polyline = filter_out(
-                        activity.map.summary_polyline
-                    )
             #  strava use total_elevation_gain as elevation_gain
             activity.elevation_gain = activity.total_elevation_gain
             activity.subtype = activity.type
@@ -213,10 +203,6 @@ class Generator:
             activity.streak = streak  # type: ignore
             last_date = date
             activity_dict = activity.to_dict()
-            if not IGNORE_BEFORE_SAVING:
-                activity_dict["summary_polyline"] = filter_out(
-                    activity_dict.get("summary_polyline")
-                )
             activity_list.append(activity_dict)
 
         activity_list = self._fix_indoor_locations(activity_list)

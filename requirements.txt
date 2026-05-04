@@ -3,4 +3,3 @@ arrow
 geopy
 polyline
 sqlalchemy
-haversine==2.8.0

@@ -81,6 +81,39 @@ class Activity(Base):
         return out
 
 
+def resolve_location_country(run_activity, current_location=None):
+    strava_location = getattr(run_activity, "location_country", "") or ""
+    if (
+        current_location
+        and current_location != "China"
+        and strava_location in ("", "China")
+    ):
+        return current_location
+
+    location_country = strava_location or current_location or ""
+    start_point = getattr(run_activity, "start_latlng", None)
+    should_reverse_geocode = start_point and (
+        not location_country or location_country == "China"
+    )
+
+    if not should_reverse_geocode:
+        return location_country
+
+    for _ in range(2):
+        try:
+            return str(
+                g.reverse(
+                    f"{start_point.lat}, {start_point.lon}",
+                    language="zh-CN",  # type: ignore
+                    timeout=15,
+                )
+            )
+        except Exception:
+            pass
+
+    return location_country
+
+
 def update_or_create_activity(session, run_activity):
     created = False
     try:
@@ -103,30 +136,7 @@ def update_or_create_activity(session, run_activity):
             current_elevation_gain = float(run_activity.elevation_gain)
 
         if not activity:
-            start_point = run_activity.start_latlng
-            location_country = getattr(run_activity, "location_country", "")
-            # or China for #176 to fix
-            if not location_country and start_point or location_country == "China":
-                try:
-                    location_country = str(
-                        g.reverse(
-                            f"{start_point.lat}, {start_point.lon}",
-                            language="zh-CN",  # type: ignore
-                            timeout=15,
-                        )
-                    )
-                # limit (only for the first time)
-                except Exception:
-                    try:
-                        location_country = str(
-                            g.reverse(
-                                f"{start_point.lat}, {start_point.lon}",
-                                language="zh-CN",  # type: ignore
-                                timeout=15,
-                            )
-                        )
-                    except Exception:
-                        pass
+            location_country = resolve_location_country(run_activity)
 
             activity = Activity(
                 run_id=run_activity.id,
@@ -149,12 +159,18 @@ def update_or_create_activity(session, run_activity):
             session.add(activity)
             created = True
         else:
+            location_country = resolve_location_country(
+                run_activity, activity.location_country
+            )
             activity.name = run_activity.name
             activity.distance = float(run_activity.distance)
             activity.moving_time = run_activity.moving_time
             activity.elapsed_time = run_activity.elapsed_time
             activity.type = run_activity.type
             activity.subtype = run_activity.subtype
+            activity.start_date = run_activity.start_date
+            activity.start_date_local = run_activity.start_date_local
+            activity.location_country = location_country
             activity.average_heartrate = run_activity.average_heartrate
             activity.average_speed = float(run_activity.average_speed)
             activity.elevation_gain = current_elevation_gain
