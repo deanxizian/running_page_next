@@ -209,19 +209,6 @@
   flex-direction: column;
 }
 
-.loadingMain {
-  min-height: calc(100vh - 210px);
-}
-
-.errorPanel {
-  padding: 32px;
-  color: #a1a1aa;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 800;
-  text-align: center;
-}
-
 .rightColumn > .eventPanel {
   animation-delay: 120ms;
 }

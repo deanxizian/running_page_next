@@ -1,13 +1,11 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import useActivities from '@/hooks/useActivities';
 import NotFoundPage from '@/pages/404';
+import HomeView from './HomeView';
+import HeatmapView from './HeatmapView';
+import EventsView from './EventsView';
 import { PageShell } from './ui';
-import styles from './style.module.css';
-
-const HomeView = lazy(() => import('./HomeView'));
-const HeatmapView = lazy(() => import('./HeatmapView'));
-const EventsView = lazy(() => import('./EventsView'));
 
 type DashboardView = 'home' | 'heatmap' | 'events';
 type DashboardRouteView = DashboardView | 'redirect-events' | 'not-found';
@@ -38,18 +36,6 @@ const dashboardViewForPath = (pathname: string): DashboardRouteView => {
   return 'not-found';
 };
 
-const DashboardPlaceholder = () => (
-  <main className={`${styles.main} ${styles.loadingMain}`} aria-busy="true" />
-);
-
-const DashboardError = () => (
-  <main className={styles.main}>
-    <section className={`${styles.panel} ${styles.errorPanel}`}>
-      Unable to load activities.
-    </section>
-  </main>
-);
-
 const DashboardDataView = ({ currentView }: { currentView: DashboardView }) => {
   const {
     years,
@@ -59,51 +45,31 @@ const DashboardDataView = ({ currentView }: { currentView: DashboardView }) => {
     latestRun,
     latestMonth,
     earliestMonth,
-    isLoading,
-    error,
   } = useActivities();
-
-  if (isLoading) {
-    return (
-      <PageShell thisYear={thisYear || currentYear()}>
-        <DashboardPlaceholder />
-      </PageShell>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageShell thisYear={thisYear || currentYear()}>
-        <DashboardError />
-      </PageShell>
-    );
-  }
 
   return (
     <PageShell thisYear={thisYear || currentYear()}>
-      <Suspense fallback={<DashboardPlaceholder />}>
-        {currentView === 'home' && (
-          <HomeView
-            years={years}
-            thisYear={thisYear}
-            sortedActivities={sortedActivities}
-            activityGroups={activityGroups}
-            latestRun={latestRun}
-            latestMonth={latestMonth}
-            earliestMonth={earliestMonth}
-          />
-        )}
-        {currentView === 'heatmap' && (
-          <HeatmapView
-            years={years}
-            sortedActivities={sortedActivities}
-            activityGroups={activityGroups}
-          />
-        )}
-        {currentView === 'events' && (
-          <EventsView sortedActivities={sortedActivities} />
-        )}
-      </Suspense>
+      {currentView === 'home' && (
+        <HomeView
+          years={years}
+          thisYear={thisYear}
+          sortedActivities={sortedActivities}
+          activityGroups={activityGroups}
+          latestRun={latestRun}
+          latestMonth={latestMonth}
+          earliestMonth={earliestMonth}
+        />
+      )}
+      {currentView === 'heatmap' && (
+        <HeatmapView
+          years={years}
+          sortedActivities={sortedActivities}
+          activityGroups={activityGroups}
+        />
+      )}
+      {currentView === 'events' && (
+        <EventsView sortedActivities={sortedActivities} />
+      )}
     </PageShell>
   );
 };
