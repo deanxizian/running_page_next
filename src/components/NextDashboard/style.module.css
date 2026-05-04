@@ -209,7 +209,11 @@
   flex-direction: column;
 }
 
-.loadingPanel {
+.loadingMain {
+  min-height: calc(100vh - 210px);
+}
+
+.errorPanel {
   padding: 32px;
   color: #a1a1aa;
   font-family: var(--font-mono);

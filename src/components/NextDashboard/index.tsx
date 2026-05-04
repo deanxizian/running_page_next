@@ -38,10 +38,14 @@ const dashboardViewForPath = (pathname: string): DashboardRouteView => {
   return 'not-found';
 };
 
-const DashboardLoading = ({ message }: { message: string }) => (
+const DashboardPlaceholder = () => (
+  <main className={`${styles.main} ${styles.loadingMain}`} aria-busy="true" />
+);
+
+const DashboardError = () => (
   <main className={styles.main}>
-    <section className={`${styles.panel} ${styles.loadingPanel}`}>
-      {message}
+    <section className={`${styles.panel} ${styles.errorPanel}`}>
+      Unable to load activities.
     </section>
   </main>
 );
@@ -62,7 +66,7 @@ const DashboardDataView = ({ currentView }: { currentView: DashboardView }) => {
   if (isLoading) {
     return (
       <PageShell thisYear={thisYear || currentYear()}>
-        <DashboardLoading message="Loading activities..." />
+        <DashboardPlaceholder />
       </PageShell>
     );
   }
@@ -70,14 +74,14 @@ const DashboardDataView = ({ currentView }: { currentView: DashboardView }) => {
   if (error) {
     return (
       <PageShell thisYear={thisYear || currentYear()}>
-        <DashboardLoading message="Unable to load activities." />
+        <DashboardError />
       </PageShell>
     );
   }
 
   return (
     <PageShell thisYear={thisYear || currentYear()}>
-      <Suspense fallback={<DashboardLoading message="Loading view..." />}>
+      <Suspense fallback={<DashboardPlaceholder />}>
         {currentView === 'home' && (
           <HomeView
             years={years}
