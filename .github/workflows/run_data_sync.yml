@@ -10,6 +10,9 @@ permissions:
   contents: write
   actions: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: strava-data-sync
   cancel-in-progress: false
