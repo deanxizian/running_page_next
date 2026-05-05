@@ -6,8 +6,8 @@ import {
 } from '@/shared/lib/dashboard';
 import { formatDurationShort } from '@/entities/activity/lib/format';
 import type { HomeMetricsViewModel } from '../../model/types';
-import { MetricCard } from '@/components/NextDashboard/ui';
-import styles from '@/components/NextDashboard/style.module.css';
+import { MetricCard } from '@/shared/ui/dashboard';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const MetricCards = ({
   vm,

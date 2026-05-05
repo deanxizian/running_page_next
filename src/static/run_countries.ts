@@ -4,7 +4,7 @@ import type {
   Polygon,
   MultiPolygon,
 } from '@/types/geojson';
-import { MAIN_COLOR } from '@/utils/const';
+import { MAIN_COLOR } from '@/shared/theme/colors';
 
 export type RPGeometry = LineString | Polygon | MultiPolygon;
 

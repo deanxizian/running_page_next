@@ -29,9 +29,19 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
       - run: pnpm install --frozen-lockfile
+
+      - run: python -m pip install ruff==0.15.12
+
+      - run: pnpm exec playwright install --with-deps chromium
 
       - name: Check
         env:
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN || vars.VITE_MAPBOX_TOKEN }}
-        run: pnpm check
+        run: pnpm check && pnpm python:check && pnpm test:e2e

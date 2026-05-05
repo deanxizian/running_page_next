@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useOutletContext } from 'react-router-dom';
 import useActivities from '@/entities/activity/hooks/useActivities';
 import type { ActivitySnapshot } from '@/entities/activity/hooks/useActivities';
-import { PageShell } from '@/components/NextDashboard/ui';
+import { PageShell } from '@/shared/ui/dashboard';
 
 type DashboardOutletContext = {
   activitySnapshot: ActivitySnapshot;

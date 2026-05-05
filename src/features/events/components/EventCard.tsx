@@ -6,7 +6,7 @@ import {
 import { activityTitleForRun } from '@/entities/activity/lib/stats';
 import EventPbMedalIcon from './EventPbMedalIcon';
 import EventRouteBackground from './EventRouteBackground';
-import styles from '@/components/NextDashboard/events.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventCard = ({
   pbLabel,

@@ -1,6 +1,6 @@
-import { ChevronIcon } from '@/components/NextDashboard/ui';
+import { ChevronIcon } from '@/shared/ui/dashboard';
 import type { HomeDashboardActions } from '../../model/types';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const Pagination = ({
   page,

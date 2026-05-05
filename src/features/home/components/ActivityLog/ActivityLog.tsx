@@ -5,7 +5,7 @@ import type {
 } from '../../model/types';
 import ActivityLogRow from './ActivityLogRow';
 import Pagination from './Pagination';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const ActivityLog = ({
   vm,

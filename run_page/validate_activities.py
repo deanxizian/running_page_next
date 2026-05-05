@@ -1,9 +1,8 @@
 import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 REQUIRED_FIELDS = {
     "run_id": int,
@@ -38,9 +37,7 @@ def local_start_fields(start_date_local):
     # Must match generator semantics: local wall-clock timestamp for sorting,
     # not the activity's real UTC instant.
     return {
-        "start_time_local_ms": int(
-            local_start.replace(tzinfo=timezone.utc).timestamp() * 1000
-        ),
+        "start_time_local_ms": int(local_start.replace(tzinfo=UTC).timestamp() * 1000),
         "month_key": local_start.strftime("%Y-%m"),
         "year_key": local_start.strftime("%Y"),
     }
@@ -77,9 +74,7 @@ def validate_activity(activity, index):
     try:
         expected_dates = local_start_fields(activity["start_date_local"])
     except ValueError as exc:
-        raise ValueError(
-            f"activity[{index}].start_date_local is invalid"
-        ) from exc
+        raise ValueError(f"activity[{index}].start_date_local is invalid") from exc
 
     for field, expected_value in expected_dates.items():
         if activity[field] != expected_value:

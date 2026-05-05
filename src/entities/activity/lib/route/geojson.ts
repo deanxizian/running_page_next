@@ -5,7 +5,7 @@ import type {
   LineString,
 } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
-import { SINGLE_RUN_COLOR_DARK } from '@/utils/const';
+import { SINGLE_RUN_COLOR_DARK } from '@/shared/theme/colors';
 import type { Activity } from '../../model/types';
 import { pathForRun } from './decode';
 import { getFocusedRouteBounds } from './bounds';

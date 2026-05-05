@@ -2,7 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { Activity } from '@/entities/activity/model/types';
 import type { EventGroup } from '../model/types';
 import EventCard from './EventCard';
-import styles from '@/components/NextDashboard/events.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventList = ({
   eventPbLabels,

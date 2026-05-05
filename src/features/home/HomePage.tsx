@@ -1,5 +1,5 @@
 import { useDashboardData } from '@/app/DashboardLayout';
-import HomeView from '@/components/NextDashboard/HomeView';
+import HomeView from '@/features/home/HomeView';
 
 const HomePage = () => {
   const { activitySnapshot } = useDashboardData();

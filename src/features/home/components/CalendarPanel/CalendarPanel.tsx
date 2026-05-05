@@ -1,12 +1,12 @@
 import { DIST_UNIT } from '@/entities/activity/lib/format';
 import { WEEKDAY_LABELS } from '@/shared/lib/dashboard';
-import { ChevronIcon } from '@/components/NextDashboard/ui';
+import { ChevronIcon } from '@/shared/ui/dashboard';
 import type {
   CalendarPanelViewModel,
   HomeDashboardActions,
 } from '../../model/types';
 import CalendarCell from './CalendarCell';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const slideClassFor = (direction: CalendarPanelViewModel['slideDirection']) =>
   direction === 'backward'

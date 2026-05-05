@@ -9,7 +9,7 @@ import HomeMapPanel from '@/features/home/components/HomeMapPanel/HomeMapPanel';
 import MetricCards from '@/features/home/components/MetricCards/MetricCards';
 import MonthlyChart from '@/features/home/components/MonthlyChart/MonthlyChart';
 import { useHomeDashboard } from '@/features/home/model/useHomeDashboard';
-import styles from './style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const HomeView = ({
   years,

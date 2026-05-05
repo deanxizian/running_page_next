@@ -1,6 +1,6 @@
 import { activityTitleForRun } from '@/entities/activity/lib/stats';
 import type { EventSummaryViewModel } from '../../model/types';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const EventSummaryCard = ({
   id,

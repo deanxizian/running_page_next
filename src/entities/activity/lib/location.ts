@@ -1,6 +1,6 @@
 import type { Activity } from '../model/types';
 import { chinaCities } from '@/static/city';
-import { MUNICIPALITY_CITIES_ARR } from '@/utils/const';
+import { MUNICIPALITY_CITIES_ARR } from '@/shared/config/geo';
 
 const extractCities = (str: string): string[] => {
   const locations = [];

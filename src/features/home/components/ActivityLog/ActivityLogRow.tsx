@@ -11,7 +11,7 @@ import {
   ROW_FADE_BASE_DELAY_MS,
   ROW_FADE_STAGGER_MS,
 } from '@/shared/lib/dashboard';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const ActivityLogRow = ({
   index,

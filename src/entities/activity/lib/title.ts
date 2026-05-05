@@ -1,5 +1,15 @@
 import type { Activity } from '../model/types';
-import { RUN_TITLES } from '@/utils/const';
+import { IS_CHINESE } from '@/shared/config/i18n';
+
+const RUN_TITLES = {
+  FULL_MARATHON_RUN_TITLE: IS_CHINESE ? '全程马拉松' : 'Full Marathon',
+  HALF_MARATHON_RUN_TITLE: IS_CHINESE ? '半程马拉松' : 'Half Marathon',
+  MORNING_RUN_TITLE: IS_CHINESE ? '清晨跑步' : 'Morning Run',
+  MIDDAY_RUN_TITLE: IS_CHINESE ? '午间跑步' : 'Midday Run',
+  AFTERNOON_RUN_TITLE: IS_CHINESE ? '午后跑步' : 'Afternoon Run',
+  EVENING_RUN_TITLE: IS_CHINESE ? '傍晚跑步' : 'Evening Run',
+  NIGHT_RUN_TITLE: IS_CHINESE ? '夜晚跑步' : 'Night Run',
+};
 
 const titleForRun = (run: Activity): string => {
   const runDistance = run.distance / 1000;

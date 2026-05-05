@@ -1,5 +1,5 @@
 import { useDashboardData } from '@/app/DashboardLayout';
-import HeatmapView from '@/components/NextDashboard/HeatmapView';
+import HeatmapView from '@/features/heatmap/HeatmapView';
 
 const HeatmapPage = () => {
   const { activitySnapshot } = useDashboardData();

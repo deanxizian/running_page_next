@@ -1,6 +1,6 @@
 import { DIST_UNIT } from '@/entities/activity/lib/format';
 import type { MonthlyBarViewModel } from '../../model/types';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const MonthlyBar = ({
   bar,

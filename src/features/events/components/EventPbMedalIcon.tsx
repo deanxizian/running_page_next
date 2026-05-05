@@ -1,4 +1,4 @@
-import styles from '@/components/NextDashboard/events.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventPbMedalIcon = () => (
   <svg

@@ -1,8 +1,11 @@
 import argparse
 import json
+import logging
 
 from config import JSON_FILE, SQL_FILE
 from generator import Generator
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 
 def run_strava_sync(

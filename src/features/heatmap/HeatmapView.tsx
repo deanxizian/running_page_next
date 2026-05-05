@@ -11,7 +11,7 @@ import {
   formatRoundedHours,
   formatDurationShort,
 } from '@/shared/lib/dashboard';
-import sharedStyles from './style.module.css';
+import sharedStyles from '@/shared/ui/dashboard.module.css';
 import styles from './heatmap.module.css';
 
 const HeatmapView = ({

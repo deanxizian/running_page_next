@@ -1,6 +1,6 @@
 import type { Activity } from '@/entities/activity/model/types';
 import { getRoutePath } from '@/entities/activity/lib/route';
-import styles from '@/components/NextDashboard/events.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventRouteBackground = ({ run }: { run: Activity }) => {
   const d = getRoutePath(run, 160, 96);

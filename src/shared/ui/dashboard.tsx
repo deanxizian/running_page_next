@@ -9,7 +9,7 @@ import {
   getRoutePath,
   navIndexForPath,
 } from '@/shared/lib/dashboard';
-import styles from './style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const MetricCard = ({
   label,

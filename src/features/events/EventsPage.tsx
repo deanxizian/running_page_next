@@ -2,8 +2,8 @@ import { useDashboardData } from '@/app/DashboardLayout';
 import EventList from './components/EventList';
 import EventModal from './components/EventModal';
 import { useEventsPage } from './model/useEventsPage';
-import sharedStyles from '@/components/NextDashboard/style.module.css';
-import styles from '@/components/NextDashboard/events.module.css';
+import sharedStyles from '@/shared/ui/dashboard.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventsPage = () => {
   const { activitySnapshot } = useDashboardData();

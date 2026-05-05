@@ -1,10 +1,10 @@
-import { ChevronIcon } from '@/components/NextDashboard/ui';
+import { ChevronIcon } from '@/shared/ui/dashboard';
 import type {
   HomeDashboardActions,
   MonthlyChartViewModel,
 } from '../../model/types';
 import MonthlyBar from './MonthlyBar';
-import styles from '@/components/NextDashboard/style.module.css';
+import styles from '@/shared/ui/dashboard.module.css';
 
 const slideClassFor = (direction: MonthlyChartViewModel['slideDirection']) =>
   direction === 'backward'

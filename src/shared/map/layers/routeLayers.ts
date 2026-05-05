@@ -1,10 +1,10 @@
 import type { FillPaint, LineLayout, LinePaint } from 'mapbox-gl';
 import {
   COUNTRY_FILL_COLOR,
-  LINE_OPACITY,
   PROVINCE_FILL_COLOR,
   SINGLE_RUN_COLOR_DARK,
-} from '@/utils/const';
+} from '@/shared/theme/colors';
+import { LINE_OPACITY } from '@/shared/config/map';
 
 const routeLineLayout = {
   'line-join': 'round',

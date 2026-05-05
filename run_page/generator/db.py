@@ -1,8 +1,9 @@
 import datetime
+import logging
 import random
 import string
 
-from geopy.geocoders import options, Nominatim
+from geopy.geocoders import Nominatim, options
 from sqlalchemy import (
     Column,
     Float,
@@ -13,10 +14,13 @@ from sqlalchemy import (
     inspect,
     text,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-Base = declarative_base()
+logger = logging.getLogger(__name__)
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 # random user name 8 letters
@@ -53,7 +57,7 @@ def activity_date_fields(start_date_local):
     # This is not intended to represent the activity's real UTC instant.
     return {
         "start_time_local_ms": int(
-            local_start.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+            local_start.replace(tzinfo=datetime.UTC).timestamp() * 1000
         ),
         "month_key": local_start.strftime("%Y-%m"),
         "year_key": local_start.strftime("%Y"),
@@ -114,17 +118,23 @@ def resolve_location_country(run_activity, current_location=None):
     if not should_reverse_geocode:
         return location_country
 
-    for _ in range(2):
+    for attempt in range(2):
         try:
             return str(
                 g.reverse(
                     f"{start_point.lat}, {start_point.lon}",
-                    language="zh-CN",  # type: ignore
+                    language="zh-CN",
                     timeout=15,
                 )
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                "Reverse geocode failed for %s,%s on attempt %s: %s",
+                start_point.lat,
+                start_point.lon,
+                attempt + 1,
+                exc,
+            )
 
     return location_country
 
@@ -192,9 +202,8 @@ def update_or_create_activity(session, run_activity):
             activity.summary_polyline = (
                 run_activity.map and run_activity.map.summary_polyline or ""
             )
-    except Exception as e:
-        print(f"something wrong with {run_activity.id}")
-        print(str(e))
+    except Exception:
+        logger.exception("Failed to sync activity %s", run_activity.id)
 
     return created
 
@@ -212,11 +221,10 @@ def add_missing_columns(engine, model):
         with engine.connect() as conn:
             for column in missing_columns:
                 column_type = str(column.type)
-                conn.execute(
-                    text(
-                        f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}"
-                    )
+                statement = (
+                    f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}"
                 )
+                conn.execute(text(statement))
 
 
 def init_db(db_path):

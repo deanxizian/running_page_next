@@ -9,7 +9,7 @@ import {
 import { activityTitleForRun } from '@/entities/activity/lib/stats';
 import { EVENT_MODAL_MAP_HEIGHT } from '@/shared/lib/dashboard';
 import type { EventModalViewModel } from '../model/types';
-import styles from '@/components/NextDashboard/events.module.css';
+import styles from '@/features/events/events.module.css';
 
 const EventModal = ({
   countries,

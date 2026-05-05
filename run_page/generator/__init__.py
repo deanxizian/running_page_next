@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 import os
 import sys
@@ -9,6 +10,8 @@ import stravalib
 from sqlalchemy import func
 
 from .db import Activity, init_db, update_or_create_activity
+
+logger = logging.getLogger(__name__)
 
 # Bounding box spread threshold (degrees) for indoor activity detection.
 # 0.002° ≈ 220m, which covers treadmill GPS drift.
@@ -140,7 +143,7 @@ class Generator:
         self.refresh_token = response["refresh_token"]
 
         self.client.access_token = response["access_token"]
-        print("Access ok")
+        logger.info("Strava access token refreshed")
 
     def sync(self, force):
         """
@@ -149,9 +152,9 @@ class Generator:
         """
         self.check_access()
 
-        print("Start syncing")
+        logger.info("Start syncing Strava activities")
         if force:
-            filters = {"before": datetime.datetime.now(datetime.timezone.utc)}
+            filters = {"before": datetime.datetime.now(datetime.UTC)}
         else:
             last_activity = self.session.query(func.max(Activity.start_date)).scalar()
             if last_activity:
@@ -159,7 +162,7 @@ class Generator:
                 last_activity_date = last_activity_date.shift(days=-7)
                 filters = {"after": last_activity_date.datetime}
             else:
-                filters = {"before": datetime.datetime.now(datetime.timezone.utc)}
+                filters = {"before": datetime.datetime.now(datetime.UTC)}
 
         for activity in self.client.get_activities(**filters):
             if self.only_run and activity.type != "Run":
@@ -189,7 +192,8 @@ class Generator:
         for activity in activities:
             # Determine running streak.
             date = datetime.datetime.strptime(
-                activity.start_date_local, "%Y-%m-%d %H:%M:%S"  # type: ignore
+                activity.start_date_local,
+                "%Y-%m-%d %H:%M:%S",  # type: ignore
             ).date()
             if last_date is None:
                 streak = 1
@@ -210,7 +214,7 @@ class Generator:
         # Persist indoor subtype and virtual polyline back to DB for future syncs.
         for a in activity_list:
             if a.get("subtype") == "indoor":
-                db_activity = self.session.query(Activity).get(a["run_id"])
+                db_activity = self.session.get(Activity, a["run_id"])
                 if db_activity:
                     if db_activity.subtype != "indoor":
                         db_activity.subtype = "indoor"
@@ -300,9 +304,9 @@ class Generator:
                     indoor_count += 1
 
         if indoor_count > 0:
-            print(
-                f"\n  Fixed {indoor_count} indoor activities "
-                f"with route from nearest outdoor activity"
+            logger.info(
+                "Fixed %s indoor activities with route from nearest outdoor activity",
+                indoor_count,
             )
 
         return activity_list
