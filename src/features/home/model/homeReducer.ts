@@ -26,7 +26,7 @@ type MonthRangePayload = {
   latestMonth: string;
 };
 
-type HomeDashboardAction =
+export type HomeDashboardAction =
   | { type: 'initializeMonth'; monthKey: string }
   | ({ type: 'clampMonth'; monthKey: string } & MonthRangePayload)
   | ({

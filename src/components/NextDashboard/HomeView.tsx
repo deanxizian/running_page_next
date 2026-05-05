@@ -2,15 +2,13 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
 import type { Activity } from '@/entities/activity/model/types';
+import ActivityLog from '@/features/home/components/ActivityLog/ActivityLog';
+import CalendarPanel from '@/features/home/components/CalendarPanel/CalendarPanel';
+import EventSummaryCard from '@/features/home/components/EventSummaryCard/EventSummaryCard';
+import HomeMapPanel from '@/features/home/components/HomeMapPanel/HomeMapPanel';
+import MetricCards from '@/features/home/components/MetricCards/MetricCards';
+import MonthlyChart from '@/features/home/components/MonthlyChart/MonthlyChart';
 import { useHomeDashboard } from '@/features/home/model/useHomeDashboard';
-import {
-  ActivityLog,
-  CalendarPanel,
-  HomeEventSummary,
-  HomeMapPanel,
-  HomeMetricCards,
-  MonthlyChart,
-} from './HomeSections';
 import styles from './style.module.css';
 
 const HomeView = ({
@@ -53,98 +51,28 @@ const HomeView = ({
       <section className={styles.dashboardGrid}>
         <div className={styles.leftColumn}>
           <div className={styles.metricsGrid}>
-            <HomeMetricCards
-              allDistance={dashboard.metrics.allDistance}
-              allSeconds={dashboard.metrics.allSeconds}
-              totalRunCount={dashboard.metrics.totalRunCount}
-              yearDistance={dashboard.metrics.yearDistance}
-              previousYearDistance={dashboard.metrics.previousYearDistance}
-              monthDistance={dashboard.metrics.monthDistance}
-              previousMonthDistance={dashboard.metrics.previousMonthDistance}
-              currentYearRuns={dashboard.metrics.currentYearRuns}
-              currentMonthRuns={dashboard.metrics.currentMonthRuns}
-              openHeatmap={openHeatmap}
-              clearEventTouchReveal={dashboard.metrics.clearEventTouchReveal}
-              totalTouchRevealResetSignal={
-                dashboard.metrics.totalTouchRevealResetSignal
-              }
-            />
+            <MetricCards vm={dashboard.metrics} openHeatmap={openHeatmap} />
           </div>
 
-          <ActivityLog
-            years={dashboard.log.years}
-            yearFilter={dashboard.log.yearFilter}
-            displayedActivities={dashboard.log.displayedActivities}
-            pagedRuns={dashboard.log.pagedRuns}
-            page={dashboard.log.page}
-            pageCount={dashboard.log.pageCount}
-            selectedRun={dashboard.log.selectedRun}
-            changeFilter={dashboard.actions.changeFilter}
-            toggleRunSelection={dashboard.actions.toggleRunSelection}
-            goToPreviousPage={dashboard.actions.goToPreviousPage}
-            goToNextPage={dashboard.actions.goToNextPage}
-          />
+          <ActivityLog vm={dashboard.log} actions={dashboard.actions} />
         </div>
 
         <aside className={styles.rightColumn}>
-          <HomeEventSummary
+          <EventSummaryCard
             id="events"
-            eventCount={dashboard.eventSummary.marathonRuns.length}
-            latestLongRun={dashboard.eventSummary.latestLongRun}
             thisYear={thisYear}
-            isTouchRevealActive={
-              dashboard.eventSummary.isEventTouchRevealActive
-            }
-            touchRevealHandlers={
-              dashboard.eventSummary.eventTouchRevealHandlers
-            }
+            vm={dashboard.eventSummary}
           />
           <HomeMapPanel
             id="map-panel"
-            viewState={dashboard.map.viewState}
-            geoData={dashboard.map.selectedGeoData}
+            vm={dashboard.map}
             countries={countries}
             provinces={provinces}
-            setViewState={dashboard.map.setMapViewState}
-            onReady={dashboard.map.handleMapReady}
           />
-          <CalendarPanel
-            calendarMonth={dashboard.calendar.calendarMonth}
-            calendar={dashboard.calendar.calendar}
-            previousCalendarMonth={dashboard.calendar.previousCalendarMonth}
-            nextCalendarMonth={dashboard.calendar.nextCalendarMonth}
-            canGoToPreviousMonth={dashboard.calendar.canGoToPreviousMonth}
-            canGoToNextMonth={dashboard.calendar.canGoToNextMonth}
-            selectedRun={dashboard.calendar.selectedRun}
-            previewedCalendarKey={dashboard.calendar.previewedCalendarKey}
-            calendarSlideClass={dashboard.calendar.calendarSlideClass}
-            changeCalendarMonth={dashboard.actions.changeCalendarMonth}
-            toggleRunSelection={dashboard.actions.toggleRunSelection}
-            previewCalendarCell={dashboard.calendar.previewCalendarCell}
-            clearCalendarPreview={dashboard.calendar.clearCalendarPreview}
-            previewCalendarCellAtPoint={
-              dashboard.calendar.previewCalendarCellAtPoint
-            }
-          />
+          <CalendarPanel vm={dashboard.calendar} actions={dashboard.actions} />
           <MonthlyChart
-            monthlyChartYear={dashboard.monthlyChart.monthlyChartYear}
-            monthlyBars={dashboard.monthlyChart.monthlyBars}
-            activeMonthlyBarKey={dashboard.monthlyChart.activeMonthlyBarKey}
-            olderMonthlyChartYear={dashboard.monthlyChart.olderMonthlyChartYear}
-            newerMonthlyChartYear={dashboard.monthlyChart.newerMonthlyChartYear}
-            monthlyChartSlideClass={
-              dashboard.monthlyChart.monthlyChartSlideClass
-            }
-            changeMonthlyChartYear={dashboard.actions.changeMonthlyChartYear}
-            changeCalendarMonth={dashboard.actions.changeCalendarMonth}
-            setHoveredMonthKey={dashboard.monthlyChart.setHoveredMonthKey}
-            previewMonthlyBar={dashboard.monthlyChart.previewMonthlyBar}
-            clearMonthlyBarPreview={
-              dashboard.monthlyChart.clearMonthlyBarPreview
-            }
-            previewMonthlyBarAtPoint={
-              dashboard.monthlyChart.previewMonthlyBarAtPoint
-            }
+            vm={dashboard.monthlyChart}
+            actions={dashboard.actions}
           />
         </aside>
       </section>

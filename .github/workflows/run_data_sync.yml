@@ -36,6 +36,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Restore sync cache
+        uses: actions/cache@v4
+        with:
+          path: run_page/data.db
+          key: strava-data-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            strava-data-${{ runner.os }}-
+
       - name: Sync running activities from Strava
         env:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
@@ -50,12 +58,20 @@ jobs:
       - name: Validate generated activities
         run: python run_page/validate_activities.py src/static/activities.json
 
+      - name: Upload sync database artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: strava-sync-data-db
+          path: run_page/data.db
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Commit updated running data
         id: commit
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add run_page/data.db src/static/activities.json
+          git add src/static/activities.json
           if git diff --cached --quiet; then
             echo "No running data changes to commit."
             echo "changed=false" >> "$GITHUB_OUTPUT"

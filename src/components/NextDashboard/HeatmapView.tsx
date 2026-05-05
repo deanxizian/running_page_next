@@ -2,6 +2,7 @@ import { PointerEvent as ReactPointerEvent, useCallback, useMemo } from 'react';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
 import type { Activity } from '@/entities/activity/model/types';
 import { DIST_UNIT } from '@/entities/activity/lib/format';
+import { useTouchPreview } from '@/shared/hooks/useTouchInteractions';
 import {
   EMPTY_ACTIVITIES,
   getMondayFirstDayIndex,
@@ -9,8 +10,7 @@ import {
   summarizeRuns,
   formatRoundedHours,
   formatDurationShort,
-} from './shared';
-import { useTouchPreview } from './hooks';
+} from '@/shared/lib/dashboard';
 import sharedStyles from './style.module.css';
 import styles from './heatmap.module.css';
 

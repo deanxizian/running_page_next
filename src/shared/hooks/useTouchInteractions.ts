@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { TOUCH_REVEAL_DURATION_MS } from './shared';
+import { TOUCH_REVEAL_DURATION_MS } from '@/shared/lib/dashboard';
 
 const useTouchRevealAction = (
   action?: () => void,

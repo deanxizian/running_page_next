@@ -1,5 +1,7 @@
 import type { Activity } from '@/entities/activity/model/types';
 import {
+  DIST_UNIT,
+  M_TO_DIST,
   formatDuration,
   formatDurationShort,
   formatMonthlyBarDistance,
@@ -83,6 +85,8 @@ export {
   NAV_INDICATOR_STEP_DURATION_MS,
   navIndexForPath,
   WEEKDAY_LABELS,
+  DIST_UNIT,
+  M_TO_DIST,
   monthKeyFor,
   shiftMonthKey,
   monthOrderFor,
