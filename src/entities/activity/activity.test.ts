@@ -10,7 +10,7 @@ import { monthKeyFor, shiftMonthKey, sortDateFunc } from './lib/date';
 import { formatDuration, formatPace } from './lib/format';
 import { groupActivities } from './lib/group';
 import { isMarathonEventRun } from './lib/event';
-import { getBoundsForRuns } from './lib/route';
+import { geoJsonForRuns, getBoundsForRuns, pathForRun } from './lib/route';
 
 const activity = (overrides: Partial<Activity> = {}): Activity => {
   const startDateLocal = overrides.start_date_local ?? '2026-05-01 08:00:00';
@@ -125,5 +125,36 @@ describe('activity route helpers', () => {
       latitude: 20,
       zoom: 3,
     });
+  });
+
+  it('uses finite zero coordinates for duplicate-point fallback routes', () => {
+    const run = activity({
+      run_id: 100,
+      summary_polyline: '_ibE_seK??',
+      location_country:
+        "浙江省, 中国, {'latitude': 0.000000, 'longitude': 10.000000}",
+    });
+
+    expect(pathForRun(run)).toEqual([
+      [10, 0],
+      [10, 0],
+    ]);
+  });
+
+  it('filters empty route geometries from run GeoJSON', () => {
+    const runWithoutRoute = activity({
+      run_id: 101,
+      summary_polyline: '',
+    });
+    const runWithRoute = activity({
+      run_id: 102,
+      summary_polyline: '_ibE_seK?_ibE',
+    });
+
+    const data = geoJsonForRuns([runWithoutRoute, runWithRoute]);
+
+    expect(data.features).toHaveLength(1);
+    expect(data.features[0].properties?.runId).toBe(runWithRoute.run_id);
+    expect(data.features[0].geometry.coordinates).toHaveLength(2);
   });
 });

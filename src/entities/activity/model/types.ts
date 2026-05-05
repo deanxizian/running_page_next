@@ -9,6 +9,10 @@ export interface Activity {
   subtype: string;
   start_date: string;
   start_date_local: string;
+  /**
+   * Timestamp derived from local wall-clock time.
+   * Used for stable sorting/grouping only; not a real UTC instant.
+   */
   start_time_local_ms: number;
   month_key: string;
   year_key: string;

@@ -49,6 +49,8 @@ ACTIVITY_KEYS = [
 
 def activity_date_fields(start_date_local):
     local_start = datetime.datetime.strptime(start_date_local, "%Y-%m-%d %H:%M:%S")
+    # Derived from local wall-clock time for stable frontend sorting/grouping.
+    # This is not intended to represent the activity's real UTC instant.
     return {
         "start_time_local_ms": int(
             local_start.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000

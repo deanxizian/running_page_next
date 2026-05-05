@@ -28,6 +28,13 @@ const pathCache = new Map<
   }
 >();
 
+const isValidCoordinate = (
+  coordinate: Coordinate | null | undefined
+): coordinate is Coordinate =>
+  Boolean(coordinate) &&
+  Number.isFinite(coordinate![0]) &&
+  Number.isFinite(coordinate![1]);
+
 const pathForRun = (run: Activity): Coordinate[] => {
   const summaryPolyline = run.summary_polyline ?? '';
 
@@ -52,7 +59,7 @@ const pathForRun = (run: Activity): Coordinate[] => {
       String(coordinates[0]) === String(coordinates[1])
     ) {
       const { coordinate } = locationForRun(run);
-      if (coordinate?.[0] && coordinate?.[1]) {
+      if (isValidCoordinate(coordinate)) {
         const path = [coordinate, coordinate] as Coordinate[];
         pathCache.set(run.run_id, { summaryPolyline, path });
         return path;
@@ -67,23 +74,35 @@ const pathForRun = (run: Activity): Coordinate[] => {
   }
 };
 
-const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
-  type: 'FeatureCollection',
-  features: runs.map((run) => {
-    const points = pathForRun(run);
-    return {
-      type: 'Feature',
-      properties: {
-        color: SINGLE_RUN_COLOR_DARK,
-        indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: points,
-      },
-    };
-  }),
-});
+const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => {
+  const features = runs.flatMap((run) => {
+    const coordinates = pathForRun(run);
+
+    if (coordinates.length < 2) {
+      return [];
+    }
+
+    return [
+      {
+        type: 'Feature',
+        properties: {
+          runId: run.run_id,
+          color: SINGLE_RUN_COLOR_DARK,
+          indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      } satisfies Feature<LineString>,
+    ];
+  });
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  };
+};
 
 const geoJsonForMap = async (): Promise<FeatureCollection<RPGeometry>> => {
   const [{ chinaGeojson }, worldGeoJson] = await Promise.all([
@@ -257,11 +276,11 @@ const emphasizePrimaryRuns = (
 
   return {
     ...data,
-    features: data.features.map((feature, index) => ({
+    features: data.features.map((feature) => ({
       ...feature,
       properties: {
         ...feature.properties,
-        dimmed: !primaryRunIds.has(runs[index]?.run_id),
+        dimmed: !primaryRunIds.has(feature.properties?.runId as number),
       },
     })),
   };
