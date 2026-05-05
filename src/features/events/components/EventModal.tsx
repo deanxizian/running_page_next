@@ -46,9 +46,7 @@ const EventModal = ({
       <small>{vm.selectedEvent.start_date_local.slice(0, 10)}</small>
       <strong id={vm.titleId}>{activityTitleForRun(vm.selectedEvent)}</strong>
       <span>
-        距离 {(vm.selectedEvent.distance / M_TO_DIST).toFixed(2)} {DIST_UNIT} ·
-        配速 {formatPace(vm.selectedEvent.average_speed)} /{DIST_UNIT} · 时间{' '}
-        {formatDuration(convertMovingTime2Sec(vm.selectedEvent.moving_time))}
+        {`Distance ${(vm.selectedEvent.distance / M_TO_DIST).toFixed(2)} ${DIST_UNIT} · Pace ${formatPace(vm.selectedEvent.average_speed)}/${DIST_UNIT} · Time ${formatDuration(convertMovingTime2Sec(vm.selectedEvent.moving_time))}`}
       </span>
       <span className={styles.eventModalMap}>
         <RunMap
