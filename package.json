@@ -32,6 +32,7 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "check:ci": "pnpm check && pnpm python:check && pnpm test:e2e",
     "typecheck": "tsc --noEmit",
     "serve": "vite preview"
   },

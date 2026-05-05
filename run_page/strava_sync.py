@@ -9,13 +9,14 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message
 
 
 def run_strava_sync(
-    client_id,
-    client_secret,
-    refresh_token,
-    sync_types: list = [],
-    only_run=False,
-    force=False,
+    client_id: str,
+    client_secret: str,
+    refresh_token: str,
+    sync_types: list[str] | None = None,
+    only_run: bool = False,
+    force: bool = False,
 ):
+    sync_types = sync_types or []
     generator = Generator(SQL_FILE)
     generator.set_strava_config(client_id, client_secret, refresh_token)
     # judge sync types is only running or not

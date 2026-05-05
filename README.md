@@ -6,6 +6,8 @@ Strava-backed running dashboard built as a Vite React SPA.
 
 ```bash
 pnpm install
+pnpm test:e2e:install
+pip install -r requirements.txt
 pnpm dev
 ```
 
