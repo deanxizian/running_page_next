@@ -1,4 +1,4 @@
-import RunMap from '@/components/RunMap/LazyRunMap';
+import RunMap from '@/shared/map/LazyRunMap';
 import {
   DIST_UNIT,
   M_TO_DIST,

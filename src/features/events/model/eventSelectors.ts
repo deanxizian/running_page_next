@@ -13,7 +13,7 @@ const groupedEventsFor = (eventRuns: Activity[]): EventGroup[] => {
   const groups = new Map<string, Activity[]>();
 
   eventRuns.forEach((run) => {
-    const year = run.start_date_local.slice(0, 4);
+    const year = run.year_key;
     groups.set(year, [...(groups.get(year) ?? []), run]);
   });
 

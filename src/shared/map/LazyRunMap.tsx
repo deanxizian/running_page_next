@@ -1,13 +1,13 @@
 import { lazy, Suspense } from 'react';
 import type { CSSProperties } from 'react';
-import type { RunMapProps } from './index';
+import type { RunMapProps } from './RunMap';
+import { DEFAULT_MAP_HEIGHT } from './lib/bounds';
 
-const RunMap = lazy(() => import('./index'));
-const DEFAULT_FALLBACK_HEIGHT = 600;
+const RunMap = lazy(() => import('./RunMap'));
 
 const fallbackStyleFor = (height: RunMapProps['height']): CSSProperties => ({
   width: '100%',
-  height: height ?? DEFAULT_FALLBACK_HEIGHT,
+  height: height ?? DEFAULT_MAP_HEIGHT,
   maxWidth: '100%',
 });
 
@@ -20,3 +20,4 @@ const LazyRunMap = (props: RunMapProps) => (
 );
 
 export default LazyRunMap;
+export type { RunMapProps };

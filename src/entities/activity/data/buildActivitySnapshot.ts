@@ -1,7 +1,7 @@
 import { COUNTRY_STANDARDIZATION } from '@/static/city';
 import type { Activity } from '../model/types';
 import { locationForRun } from '../lib/location';
-import { monthKeyFor, sortDateFunc, yearKeyFor } from '../lib/date';
+import { monthKeyFor, sortDateFunc } from '../lib/date';
 import { groupActivities } from '../lib/group';
 import type { ActivityGroups } from '../lib/group';
 
@@ -39,7 +39,7 @@ const buildActivitySnapshot = (activities: Activity[]): ActivitySnapshot => {
     const { province, country } = location;
     if (province) provinces.add(province);
     if (country) countries.add(standardizeCountryName(country));
-    years.add(yearKeyFor(run.start_date_local));
+    years.add(run.year_key);
   });
 
   const yearsArray = [...years].sort().reverse();
@@ -54,11 +54,9 @@ const buildActivitySnapshot = (activities: Activity[]): ActivitySnapshot => {
     provinces: [...provinces],
     thisYear: yearsArray[0] || '',
     latestRun,
-    latestMonth: latestRun ? monthKeyFor(latestRun.start_date_local) : '',
+    latestMonth: latestRun ? monthKeyFor(latestRun) : '',
     earliestMonth: sortedActivities.length
-      ? monthKeyFor(
-          sortedActivities[sortedActivities.length - 1].start_date_local
-        )
+      ? monthKeyFor(sortedActivities[sortedActivities.length - 1])
       : '',
   };
 };

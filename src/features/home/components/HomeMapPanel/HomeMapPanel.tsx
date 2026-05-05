@@ -1,4 +1,4 @@
-import RunMap from '@/components/RunMap/LazyRunMap';
+import RunMap from '@/shared/map/LazyRunMap';
 import { MAP_PANEL_HEIGHT } from '@/shared/lib/dashboard';
 import type { HomeMapViewModel } from '../../model/types';
 import styles from '@/components/NextDashboard/style.module.css';

@@ -1,6 +1,7 @@
 import json
 import math
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -13,6 +14,9 @@ REQUIRED_FIELDS = {
     "subtype": str,
     "start_date": str,
     "start_date_local": str,
+    "start_time_local_ms": int,
+    "month_key": str,
+    "year_key": str,
     "average_speed": (int, float),
     "streak": int,
 }
@@ -29,6 +33,17 @@ def is_finite_number(value):
     return isinstance(value, (int, float)) and math.isfinite(value)
 
 
+def local_start_fields(start_date_local):
+    local_start = datetime.strptime(start_date_local, "%Y-%m-%d %H:%M:%S")
+    return {
+        "start_time_local_ms": int(
+            local_start.replace(tzinfo=timezone.utc).timestamp() * 1000
+        ),
+        "month_key": local_start.strftime("%Y-%m"),
+        "year_key": local_start.strftime("%Y"),
+    }
+
+
 def validate_activity(activity, index):
     if not isinstance(activity, dict):
         raise ValueError(f"activity[{index}] must be an object")
@@ -43,12 +58,32 @@ def validate_activity(activity, index):
         if field in activity and not isinstance(activity[field], expected_type):
             raise ValueError(f"activity[{index}].{field} has invalid type")
 
-    for field in ("distance", "average_speed", "average_heartrate", "elevation_gain"):
-        if field in activity and activity[field] is not None and not is_finite_number(activity[field]):
+    for field in (
+        "distance",
+        "average_speed",
+        "average_heartrate",
+        "elevation_gain",
+        "start_time_local_ms",
+    ):
+        if (
+            field in activity
+            and activity[field] is not None
+            and not is_finite_number(activity[field])
+        ):
             raise ValueError(f"activity[{index}].{field} must be finite")
 
-    if len(activity["start_date_local"]) < 10:
-        raise ValueError(f"activity[{index}].start_date_local is invalid")
+    try:
+        expected_dates = local_start_fields(activity["start_date_local"])
+    except ValueError as exc:
+        raise ValueError(
+            f"activity[{index}].start_date_local is invalid"
+        ) from exc
+
+    for field, expected_value in expected_dates.items():
+        if activity[field] != expected_value:
+            raise ValueError(
+                f"activity[{index}].{field} does not match start_date_local"
+            )
 
 
 def main():

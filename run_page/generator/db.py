@@ -47,6 +47,17 @@ ACTIVITY_KEYS = [
 ]
 
 
+def activity_date_fields(start_date_local):
+    local_start = datetime.datetime.strptime(start_date_local, "%Y-%m-%d %H:%M:%S")
+    return {
+        "start_time_local_ms": int(
+            local_start.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000
+        ),
+        "month_key": local_start.strftime("%Y-%m"),
+        "year_key": local_start.strftime("%Y"),
+    }
+
+
 class Activity(Base):
     __tablename__ = "activities"
 
@@ -74,6 +85,8 @@ class Activity(Base):
                 out[key] = str(attr)
             else:
                 out[key] = attr
+
+        out.update(activity_date_fields(out["start_date_local"]))
 
         if self.streak:
             out["streak"] = self.streak

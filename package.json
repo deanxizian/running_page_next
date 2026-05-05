@@ -27,7 +27,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
     "typecheck": "tsc --noEmit",
     "serve": "vite preview"
   },

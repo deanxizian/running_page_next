@@ -163,7 +163,7 @@ const homeReducer = (
 
       return {
         ...applyMonthChange(state, {
-          monthKey: monthKeyFor(action.run.start_date_local),
+          monthKey: monthKeyFor(action.run),
           years: action.years,
           earliestMonth: action.earliestMonth,
           latestMonth: action.latestMonth,

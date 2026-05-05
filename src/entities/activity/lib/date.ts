@@ -1,17 +1,16 @@
 import type { Activity } from '../model/types';
 
 const sortDateFunc = (a: Activity, b: Activity) => {
-  return (
-    new Date(b.start_date_local.replace(' ', 'T')).getTime() -
-    new Date(a.start_date_local.replace(' ', 'T')).getTime()
-  );
+  return b.start_time_local_ms - a.start_time_local_ms;
 };
 
 const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
 
-const monthKeyFor = (value: string) => value.slice(0, 7);
+const monthKeyFor = (value: string | Pick<Activity, 'month_key'>) =>
+  typeof value === 'string' ? value.slice(0, 7) : value.month_key;
 
-const yearKeyFor = (value: string) => value.slice(0, 4);
+const yearKeyFor = (value: string | Pick<Activity, 'year_key'>) =>
+  typeof value === 'string' ? value.slice(0, 4) : value.year_key;
 
 const shiftMonthKey = (monthKey: string, delta: number) => {
   const [year, month] = monthKey.split('-').map(Number);

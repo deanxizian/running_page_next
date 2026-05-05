@@ -55,7 +55,7 @@ const useHomeActions = ({
         return;
       }
 
-      const runYear = run.start_date_local.slice(0, 4);
+      const runYear = run.year_key;
       const nextYearFilter =
         state.yearFilter === 'All' || state.yearFilter === runYear
           ? state.yearFilter

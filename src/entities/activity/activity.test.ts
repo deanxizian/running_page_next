@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Activity } from './model/types';
+import { localStartFieldsFor } from './model/schema';
 import { parseActivities } from './data/parseActivities';
 import {
   buildActivitySnapshot,
@@ -11,23 +12,33 @@ import { groupActivities } from './lib/group';
 import { isMarathonEventRun } from './lib/event';
 import { getBoundsForRuns } from './lib/route';
 
-const activity = (overrides: Partial<Activity> = {}): Activity => ({
-  run_id: 1,
-  name: 'Morning Run',
-  distance: 10000,
-  moving_time: '1:00:00',
-  type: 'Run',
-  subtype: 'Run',
-  start_date: '2026-05-01 00:00:00',
-  start_date_local: '2026-05-01 08:00:00',
-  location_country: '',
-  summary_polyline: '',
-  average_heartrate: null,
-  elevation_gain: 0,
-  average_speed: 2.777,
-  streak: 1,
-  ...overrides,
-});
+const activity = (overrides: Partial<Activity> = {}): Activity => {
+  const startDateLocal = overrides.start_date_local ?? '2026-05-01 08:00:00';
+  const dateFields = localStartFieldsFor(startDateLocal);
+
+  if (!dateFields) {
+    throw new Error('Invalid test activity date.');
+  }
+
+  return {
+    run_id: 1,
+    name: 'Morning Run',
+    distance: 10000,
+    moving_time: '1:00:00',
+    type: 'Run',
+    subtype: 'Run',
+    start_date: '2026-05-01 00:00:00',
+    start_date_local: startDateLocal,
+    ...dateFields,
+    location_country: '',
+    summary_polyline: '',
+    average_heartrate: null,
+    elevation_gain: 0,
+    average_speed: 2.777,
+    streak: 1,
+    ...overrides,
+  };
+};
 
 describe('activity date helpers', () => {
   it('sorts activities by local start time descending', () => {

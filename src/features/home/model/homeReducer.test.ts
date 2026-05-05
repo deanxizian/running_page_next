@@ -1,24 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import type { Activity } from '@/entities/activity/model/types';
+import { localStartFieldsFor } from '@/entities/activity/model/schema';
 import { createHomeDashboardState, homeReducer } from './homeReducer';
 
-const activity = (overrides: Partial<Activity> = {}): Activity => ({
-  run_id: 1,
-  name: 'Morning Run',
-  distance: 10000,
-  moving_time: '1:00:00',
-  type: 'Run',
-  subtype: 'Run',
-  start_date: '2026-05-01 00:00:00',
-  start_date_local: '2026-05-01 08:00:00',
-  location_country: '',
-  summary_polyline: '',
-  average_heartrate: null,
-  elevation_gain: 0,
-  average_speed: 2.777,
-  streak: 1,
-  ...overrides,
-});
+const activity = (overrides: Partial<Activity> = {}): Activity => {
+  const startDateLocal = overrides.start_date_local ?? '2026-05-01 08:00:00';
+  const dateFields = localStartFieldsFor(startDateLocal);
+
+  if (!dateFields) {
+    throw new Error('Invalid test activity date.');
+  }
+
+  return {
+    run_id: 1,
+    name: 'Morning Run',
+    distance: 10000,
+    moving_time: '1:00:00',
+    type: 'Run',
+    subtype: 'Run',
+    start_date: '2026-05-01 00:00:00',
+    start_date_local: startDateLocal,
+    ...dateFields,
+    location_country: '',
+    summary_polyline: '',
+    average_heartrate: null,
+    elevation_gain: 0,
+    average_speed: 2.777,
+    streak: 1,
+    ...overrides,
+  };
+};
 
 describe('homeReducer', () => {
   it('initializes the default year filter and latest calendar month', () => {
