@@ -61,7 +61,7 @@ const pathForRun = (run: Activity): Coordinate[] => {
 
     pathCache.set(run.run_id, { summaryPolyline, path: coordinates });
     return coordinates;
-  } catch (_err) {
+  } catch {
     pathCache.delete(run.run_id);
     return [];
   }
@@ -215,7 +215,10 @@ const getFocusedRouteBounds = (runs: Activity[]) => {
           const medianLng = centerLngs[Math.floor(centerLngs.length / 2)];
           const medianLat = centerLats[Math.floor(centerLats.length / 2)];
           const cosLat = Math.cos((medianLat * Math.PI) / 180);
-          const retainedCount = Math.max(1, Math.ceil(routeBounds.length * 0.9));
+          const retainedCount = Math.max(
+            1,
+            Math.ceil(routeBounds.length * 0.9)
+          );
 
           return routeBounds
             .map((bounds) => ({

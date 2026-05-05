@@ -1,18 +1,9 @@
-import {
-  useRef,
-  useCallback,
-  useState,
-  useEffect,
-  useMemo,
-} from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import ReactMap, {
-  Layer,
-  Source,
-} from 'react-map-gl';
+import ReactMap, { Layer, Source } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl';
 import type { AnyLayer, Map as MapboxMap } from 'mapbox-gl';
-import useActivities from '@/hooks/useActivities';
+import type { IViewState } from '@/entities/activity/model/types';
 import {
   IS_CHINESE,
   MAPBOX_TOKEN,
@@ -22,10 +13,7 @@ import {
   MAP_STYLE_URL,
   SINGLE_RUN_COLOR_DARK,
 } from '@/utils/const';
-import {
-  IViewState,
-  geoJsonForMap,
-} from '@/utils/utils';
+import { geoJsonForMap } from '@/entities/activity/lib/route';
 import styles from './style.module.css';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
@@ -35,6 +23,8 @@ export interface RunMapProps {
   viewState: IViewState;
   setViewState: (_viewState: IViewState) => void;
   geoData: FeatureCollection<RPGeometry>;
+  countries: string[];
+  provinces: string[];
   height?: number | string;
   onReady?: () => void;
   animateCamera?: boolean;
@@ -192,11 +182,12 @@ const RunMap = ({
   viewState,
   setViewState,
   geoData,
+  countries,
+  provinces,
   height,
   onReady,
   animateCamera = true,
 }: RunMapProps) => {
-  const { countries, provinces } = useActivities();
   const mapRef = useRef<MapRef | null>(null);
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
@@ -267,21 +258,24 @@ const RunMap = ({
     [revealBaseStyle]
   );
 
-  const scheduleBaseStyleRefresh = useCallback((map: MapboxMap) => {
-    if (styleRefreshFrameRef.current !== null) {
-      return;
-    }
-
-    styleRefreshFrameRef.current = window.requestAnimationFrame(() => {
-      styleRefreshFrameRef.current = null;
-      const didRefreshBaseStyle = softenMapBaseLayers(map);
-      showBaseLayers(map);
-
-      if (didRefreshBaseStyle) {
-        scheduleBaseStyleReveal(map);
+  const scheduleBaseStyleRefresh = useCallback(
+    (map: MapboxMap) => {
+      if (styleRefreshFrameRef.current !== null) {
+        return;
       }
-    });
-  }, [scheduleBaseStyleReveal]);
+
+      styleRefreshFrameRef.current = window.requestAnimationFrame(() => {
+        styleRefreshFrameRef.current = null;
+        const didRefreshBaseStyle = softenMapBaseLayers(map);
+        showBaseLayers(map);
+
+        if (didRefreshBaseStyle) {
+          scheduleBaseStyleReveal(map);
+        }
+      });
+    },
+    [scheduleBaseStyleReveal]
+  );
 
   const mapRefCallback = useCallback(
     (ref: MapRef | null) => {
@@ -348,7 +342,7 @@ const RunMap = ({
           setIsLoadingMapData(false);
         });
     }
-  }, [isBigMap, IS_CHINESE, mapGeoData, isLoadingMapData]);
+  }, [isBigMap, mapGeoData, isLoadingMapData]);
 
   const combinedGeoData = useMemo<FeatureCollection<RPGeometry>>(() => {
     if (isBigMap && IS_CHINESE && mapGeoData) {
@@ -505,10 +499,7 @@ const RunMap = ({
   );
 
   return (
-    <div
-      className={styles.mapFrame}
-      style={frameStyle}
-    >
+    <div className={styles.mapFrame} style={frameStyle}>
       <ReactMap
         initialViewState={viewState}
         style={mapStyle}

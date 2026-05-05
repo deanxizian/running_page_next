@@ -11,13 +11,17 @@
   pointer-events: none;
   background: rgba(32, 33, 36, 0.28);
   opacity: 1;
-  transition: opacity 220ms ease, visibility 0s linear 0s;
+  transition:
+    opacity 220ms ease,
+    visibility 0s linear 0s;
 }
 
 .mapBaseShieldHidden {
   visibility: hidden;
   opacity: 0;
-  transition: opacity 220ms ease, visibility 0s linear 220ms;
+  transition:
+    opacity 220ms ease,
+    visibility 0s linear 220ms;
 }
 
 .mapErrorNotification {

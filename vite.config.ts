@@ -1,8 +1,7 @@
 import process from 'node:process';
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-
-const individuallyPackages = ['activities'];
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,7 +9,7 @@ export default defineConfig({
   base: process.env.PATH_PREFIX || '/',
   resolve: {
     alias: {
-      '@': new URL('./src', import.meta.url).pathname,
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   define: {
@@ -22,10 +21,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id: string) => {
-          for (const item of individuallyPackages) {
-            if (id.includes(item)) {
-              return item;
-            }
+          if (id.endsWith('/src/static/activities.json')) {
+            return 'activities';
           }
         },
       },

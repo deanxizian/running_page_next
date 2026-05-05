@@ -7,14 +7,14 @@ import {
   useState,
 } from 'react';
 import RunMap from '@/components/RunMap/LazyRunMap';
-import type { Activity } from '@/utils/utils';
+import type { Activity } from '@/entities/activity/model/types';
 import {
   DIST_UNIT,
   M_TO_DIST,
   convertMovingTime2Sec,
   formatPace,
-  geoJsonForRuns,
-} from '@/utils/utils';
+} from '@/entities/activity/lib/format';
+import { geoJsonForRuns } from '@/entities/activity/lib/route';
 import {
   EVENT_MODAL_EXIT_DURATION_MS,
   EVENT_MODAL_MAP_HEIGHT,
@@ -61,7 +61,15 @@ const EventPbMedalIcon = () => (
   </svg>
 );
 
-const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
+const EventsView = ({
+  sortedActivities,
+  countries,
+  provinces,
+}: {
+  sortedActivities: Activity[];
+  countries: string[];
+  provinces: string[];
+}) => {
   const [selectedEvent, setSelectedEvent] = useState<Activity | null>(null);
   const [isEventModalClosing, setIsEventModalClosing] = useState(false);
   const {
@@ -156,10 +164,7 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
         return;
       }
 
-      const element = document.elementFromPoint(
-        event.clientX,
-        event.clientY
-      );
+      const element = document.elementFromPoint(event.clientX, event.clientY);
       const eventCard = element?.closest<HTMLButtonElement>('[data-event-id]');
       const eventId = Number(eventCard?.dataset.eventId);
 
@@ -346,13 +351,16 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
             </strong>
             <span>
               距离 {(selectedEvent.distance / M_TO_DIST).toFixed(2)} {DIST_UNIT}{' '}
-              · 配速 {formatPace(selectedEvent.average_speed)} /{DIST_UNIT} · 时间{' '}
+              · 配速 {formatPace(selectedEvent.average_speed)} /{DIST_UNIT} ·
+              时间{' '}
               {formatDuration(convertMovingTime2Sec(selectedEvent.moving_time))}
             </span>
             <span className={styles.eventModalMap}>
               <RunMap
                 viewState={modalViewState}
                 geoData={modalGeoData}
+                countries={countries}
+                provinces={provinces}
                 setViewState={ignoreModalViewStateUpdate}
                 height={EVENT_MODAL_MAP_HEIGHT}
                 animateCamera={false}
@@ -364,6 +372,5 @@ const EventsView = ({ sortedActivities }: { sortedActivities: Activity[] }) => {
     </main>
   );
 };
-
 
 export default EventsView;

@@ -1,10 +1,18 @@
-import type { Activity } from '@/types/activity';
+import type { Activity } from '@/entities/activity/model/types';
 import {
   formatDuration,
   formatDurationShort,
   formatMonthlyBarDistance,
   formatRoundedHours,
-} from '@/utils/activityFormat';
+} from '@/entities/activity/lib/format';
+import {
+  clampMonthKey,
+  getMondayFirstDayIndex,
+  isMonthWithinRange,
+  monthKeyFor,
+  monthOrderFor,
+  shiftMonthKey,
+} from '@/entities/activity/lib/date';
 import {
   activityTitleForRun,
   getRacePbCategory,
@@ -12,7 +20,7 @@ import {
   summarizeRuns,
   totalDistance,
   totalSeconds,
-} from '@/utils/activityStats';
+} from '@/entities/activity/lib/stats';
 import {
   emphasizePrimaryRuns,
   getBoundsForRuns,
@@ -21,8 +29,11 @@ import {
   getIntroViewState,
   getRoutePath,
   viewStatesNearlyEqual,
-} from '@/utils/routeGeometry';
-import type { RacePbCategory, SummaryStats } from '@/utils/activityStats';
+} from '@/entities/activity/lib/route';
+import type {
+  RacePbCategory,
+  SummaryStats,
+} from '@/entities/activity/lib/stats';
 
 const ROWS_PER_PAGE = 16;
 const YEAR_GOAL = 3000;
@@ -56,57 +67,6 @@ const navIndexForPath = (pathname: string) => {
 };
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
-
-const monthKeyFor = (value: string) => value.slice(0, 7);
-
-const shiftMonthKey = (monthKey: string, delta: number) => {
-  const [year, month] = monthKey.split('-').map(Number);
-  const date = new Date(year, month - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
-
-const monthOrderFor = (monthKey: string) => {
-  const [year, month] = monthKey.split('-').map(Number);
-  return year * 12 + month;
-};
-
-const isMonthWithinRange = (
-  monthKey: string,
-  firstMonthKey: string,
-  lastMonthKey: string
-) => {
-  if (!monthKey || !firstMonthKey || !lastMonthKey) {
-    return false;
-  }
-
-  const monthOrder = monthOrderFor(monthKey);
-  return (
-    monthOrder >= monthOrderFor(firstMonthKey) &&
-    monthOrder <= monthOrderFor(lastMonthKey)
-  );
-};
-
-const clampMonthKey = (
-  monthKey: string,
-  firstMonthKey: string,
-  lastMonthKey: string
-) => {
-  if (!monthKey || !firstMonthKey || !lastMonthKey) {
-    return monthKey;
-  }
-
-  if (monthOrderFor(monthKey) < monthOrderFor(firstMonthKey)) {
-    return firstMonthKey;
-  }
-
-  if (monthOrderFor(monthKey) > monthOrderFor(lastMonthKey)) {
-    return lastMonthKey;
-  }
-
-  return monthKey;
-};
 
 export {
   ROWS_PER_PAGE,

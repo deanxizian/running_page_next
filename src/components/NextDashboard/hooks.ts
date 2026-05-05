@@ -114,7 +114,7 @@ const useTouchRevealAction = (
   };
 };
 
-const useTouchPreview = <T,>() => {
+const useTouchPreview = <T>() => {
   const [previewedKey, setPreviewedKey] = useState<T | null>(null);
   const previewTimeoutRef = useRef<number | null>(null);
 
@@ -127,24 +127,21 @@ const useTouchPreview = <T,>() => {
     setPreviewedKey(null);
   }, []);
 
-  const showTouchPreview = useCallback(
-    (key: T | null | undefined) => {
-      if (key === null || typeof key === 'undefined') {
-        return;
-      }
+  const showTouchPreview = useCallback((key: T | null | undefined) => {
+    if (key === null || typeof key === 'undefined') {
+      return;
+    }
 
-      if (previewTimeoutRef.current) {
-        window.clearTimeout(previewTimeoutRef.current);
-      }
+    if (previewTimeoutRef.current) {
+      window.clearTimeout(previewTimeoutRef.current);
+    }
 
-      setPreviewedKey(key);
-      previewTimeoutRef.current = window.setTimeout(() => {
-        setPreviewedKey(null);
-        previewTimeoutRef.current = null;
-      }, TOUCH_REVEAL_DURATION_MS);
-    },
-    []
-  );
+    setPreviewedKey(key);
+    previewTimeoutRef.current = window.setTimeout(() => {
+      setPreviewedKey(null);
+      previewTimeoutRef.current = null;
+    }, TOUCH_REVEAL_DURATION_MS);
+  }, []);
 
   useEffect(() => clearTouchPreview, [clearTouchPreview]);
 
@@ -154,6 +151,5 @@ const useTouchPreview = <T,>() => {
     clearTouchPreview,
   };
 };
-
 
 export { useTouchRevealAction, useTouchPreview };

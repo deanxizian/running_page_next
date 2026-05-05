@@ -97,7 +97,13 @@
   top: var(--nav-y-pad);
   bottom: var(--nav-y-pad);
   left: var(--nav-x-pad);
-  width: calc((100% - var(--nav-x-pad) - var(--nav-x-pad) - var(--nav-gap) - var(--nav-gap)) / 3);
+  width: calc(
+    (
+        100% - var(--nav-x-pad) - var(--nav-x-pad) - var(--nav-gap) -
+          var(--nav-gap)
+      ) /
+      3
+  );
   border-radius: 999px;
   background: rgba(227, 25, 55, 0.12);
   box-shadow:
@@ -379,7 +385,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-
 }
 
 .metricValue {
@@ -1204,7 +1209,6 @@
   .mapPanel {
     grid-column: 1 / -1;
   }
-
 }
 
 @media (max-width: 760px) {

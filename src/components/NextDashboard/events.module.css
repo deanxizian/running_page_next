@@ -104,8 +104,8 @@
 }
 
 .eventCardPb {
-  background: linear-gradient(135deg, rgba(227, 25, 55, 0.24), transparent 56%),
-    #18181b;
+  background:
+    linear-gradient(135deg, rgba(227, 25, 55, 0.24), transparent 56%), #18181b;
   box-shadow: 0 0 26px -18px rgba(227, 25, 55, 0.9);
 }
 

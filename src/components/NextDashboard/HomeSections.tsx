@@ -3,13 +3,13 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from 'react';
 import RunMap from '@/components/RunMap/LazyRunMap';
-import type { Activity, IViewState } from '@/utils/utils';
+import type { Activity, IViewState } from '@/entities/activity/model/types';
 import {
   DIST_UNIT,
   M_TO_DIST,
   convertMovingTime2Sec,
   formatPace,
-} from '@/utils/utils';
+} from '@/entities/activity/lib/format';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
 import {
@@ -25,11 +25,7 @@ import {
   formatDurationShort,
   totalSeconds,
 } from './shared';
-import {
-  MetricCard,
-  RouteSpark,
-  ChevronIcon,
-} from './ui';
+import { MetricCard, RouteSpark, ChevronIcon } from './ui';
 import styles from './style.module.css';
 
 export interface CalendarCell {
@@ -156,7 +152,9 @@ const HomeEventSummary = ({
     </span>
     <span className={styles.latestFinish}>
       <span>Latest Finish</span>
-      <strong>{latestLongRun ? activityTitleForRun(latestLongRun) : '-'}</strong>
+      <strong>
+        {latestLongRun ? activityTitleForRun(latestLongRun) : '-'}
+      </strong>
       <small>
         {latestLongRun
           ? latestLongRun.start_date_local.slice(0, 10).replaceAll('-', '/')
@@ -171,12 +169,16 @@ const HomeMapPanel = ({
   id,
   viewState,
   geoData,
+  countries,
+  provinces,
   setViewState,
   onReady,
 }: {
   id?: string;
   viewState: IViewState;
   geoData: FeatureCollection<RPGeometry>;
+  countries: string[];
+  provinces: string[];
   setViewState: (viewState: IViewState) => void;
   onReady: () => void;
 }) => (
@@ -184,6 +186,8 @@ const HomeMapPanel = ({
     <RunMap
       viewState={viewState}
       geoData={geoData}
+      countries={countries}
+      provinces={provinces}
       setViewState={setViewState}
       height={MAP_PANEL_HEIGHT}
       onReady={onReady}
@@ -289,7 +293,9 @@ const ActivityLog = ({
                   {(run.distance / M_TO_DIST).toFixed(2)}
                   <span>{DIST_UNIT}</span>
                 </td>
-                <td>{formatDuration(convertMovingTime2Sec(run.moving_time))}</td>
+                <td>
+                  {formatDuration(convertMovingTime2Sec(run.moving_time))}
+                </td>
                 <td>{formatPace(run.average_speed)}</td>
                 <td>
                   {run.average_heartrate
@@ -355,7 +361,9 @@ const CalendarPanel = ({
   toggleRunSelection: (run: Activity) => void;
   previewCalendarCell: (key: string | undefined) => void;
   clearCalendarPreview: () => void;
-  previewCalendarCellAtPoint: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  previewCalendarCellAtPoint: (
+    event: ReactPointerEvent<HTMLDivElement>
+  ) => void;
 }) => (
   <section className={`${styles.panel} ${styles.calendarPanel}`}>
     <div className={styles.calendarHeader}>
@@ -397,9 +405,11 @@ const CalendarPanel = ({
       {calendar.cells.map((cell, index) => {
         const isSelectedCell = Boolean(
           selectedRun &&
-            cell.runs.some((run) => run.run_id === selectedRun.run_id)
+          cell.runs.some((run) => run.run_id === selectedRun.run_id)
         );
-        const calendarRun = isSelectedCell ? selectedRun : cell.runs[0] ?? null;
+        const calendarRun = isSelectedCell
+          ? selectedRun
+          : (cell.runs[0] ?? null);
         const cellKey = cell.day ? `${calendarMonth}-${cell.day}` : '';
         const canSelectCell = Boolean(calendarRun);
 
@@ -539,7 +549,10 @@ const MonthlyChart = ({
               }
             }}
             onFocus={(event) => {
-              if (bar.inRange && event.currentTarget.matches(':focus-visible')) {
+              if (
+                bar.inRange &&
+                event.currentTarget.matches(':focus-visible')
+              ) {
                 setHoveredMonthKey(bar.monthKey);
               }
             }}

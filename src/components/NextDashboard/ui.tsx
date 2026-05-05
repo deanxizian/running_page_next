@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import type { Activity } from '@/utils/utils';
+import type { Activity } from '@/entities/activity/model/types';
 import {
   NAV_LINKS,
   NAV_INDICATOR_STEP_DURATION_MS,
@@ -43,11 +43,13 @@ const MetricCard = ({
   onTouchRevealStart?: () => void;
   touchRevealResetSignal?: number;
 }) => {
-  const { isTouchRevealActive, touchRevealHandlers } =
-    useTouchRevealAction(onClick, {
+  const { isTouchRevealActive, touchRevealHandlers } = useTouchRevealAction(
+    onClick,
+    {
       onRevealStart: onTouchRevealStart,
       resetSignal: touchRevealResetSignal,
-    });
+    }
+  );
   const cardClassName = [
     styles.metricCard,
     onClick ? styles.metricCardInteractive : '',
@@ -296,9 +298,4 @@ const PageShell = ({
   );
 };
 
-export {
-  MetricCard,
-  RouteSpark,
-  ChevronIcon,
-  PageShell,
-};
+export { MetricCard, RouteSpark, ChevronIcon, PageShell };

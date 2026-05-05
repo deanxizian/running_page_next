@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Activity, IViewState } from '@/types/activity';
 import {
   ROWS_PER_PAGE,
@@ -18,7 +12,8 @@ import {
 
 const useCalendarRange = (earliestMonth: string, latestMonth: string) => {
   const isMonthWithinActivityRange = useCallback(
-    (monthKey: string) => isMonthWithinRange(monthKey, earliestMonth, latestMonth),
+    (monthKey: string) =>
+      isMonthWithinRange(monthKey, earliestMonth, latestMonth),
     [earliestMonth, latestMonth]
   );
 
@@ -67,10 +62,7 @@ const useActivityPagination = (displayedActivities: Activity[]) => {
   };
 };
 
-const useRunMapFocus = (
-  mapRuns: Activity[],
-  selectedRun: Activity | null
-) => {
+const useRunMapFocus = (mapRuns: Activity[], selectedRun: Activity | null) => {
   const selectedGeoData = useMemo(
     () => emphasizePrimaryRuns(mapRuns, selectedRun),
     [mapRuns, selectedRun]

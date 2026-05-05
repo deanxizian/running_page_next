@@ -1,6 +1,5 @@
 // Constants
-const MAPBOX_TOKEN =
-  import.meta.env.VITE_MAPBOX_TOKEN ?? '';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? '';
 const MUNICIPALITY_CITIES_ARR = [
   '北京市',
   '上海市',

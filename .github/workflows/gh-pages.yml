@@ -52,14 +52,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Build
+      - name: Quality gate
         env:
           REPO_NAME: ${{ github.event.repository.name }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN || vars.VITE_MAPBOX_TOKEN }}
-        run: PATH_PREFIX=/$REPO_NAME pnpm build
+        run: PATH_PREFIX=/$REPO_NAME pnpm check
 
       - uses: actions/upload-pages-artifact@v3
         with:

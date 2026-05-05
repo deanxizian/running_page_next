@@ -1,11 +1,7 @@
-import {
-  PointerEvent as ReactPointerEvent,
-  useCallback,
-  useMemo,
-} from 'react';
-import type { ActivityGroups } from '@/hooks/useActivities';
-import type { Activity } from '@/utils/utils';
-import { DIST_UNIT } from '@/utils/utils';
+import { PointerEvent as ReactPointerEvent, useCallback, useMemo } from 'react';
+import type { ActivityGroups } from '@/entities/activity/lib/group';
+import type { Activity } from '@/entities/activity/model/types';
+import { DIST_UNIT } from '@/entities/activity/lib/format';
 import {
   EMPTY_ACTIVITIES,
   getMondayFirstDayIndex,
@@ -77,10 +73,7 @@ const HeatmapView = ({
         return;
       }
 
-      const element = document.elementFromPoint(
-        event.clientX,
-        event.clientY
-      );
+      const element = document.elementFromPoint(event.clientX, event.clientY);
       const heatCell = element?.closest<HTMLElement>('[data-heat-key]');
 
       if (!heatCell) {
@@ -126,7 +119,9 @@ const HeatmapView = ({
                     <span>
                       {yearHeatmap.stats.distance.toFixed(0)} {DIST_UNIT}
                     </span>
-                    <span>{formatDurationShort(yearHeatmap.stats.seconds)}</span>
+                    <span>
+                      {formatDurationShort(yearHeatmap.stats.seconds)}
+                    </span>
                   </div>
                   <div className={styles.heatStatsSecondary}>
                     <span>
@@ -185,6 +180,5 @@ const HeatmapView = ({
     </main>
   );
 };
-
 
 export default HeatmapView;

@@ -4,7 +4,7 @@ import {
   convertMovingTime2Sec,
   formatPaceDuration,
 } from './activityFormat';
-import { titleForRun } from './utils';
+import { titleForRun } from '@/entities/activity/lib/title';
 
 export interface SummaryStats {
   distance: number;

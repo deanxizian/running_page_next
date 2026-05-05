@@ -47,6 +47,9 @@ jobs:
           test -n "$STRAVA_CLIENT_REFRESH_TOKEN"
           python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" --only-run
 
+      - name: Validate generated activities
+        run: python run_page/validate_activities.py src/static/activities.json
+
       - name: Commit updated running data
         id: commit
         run: |
