@@ -209,11 +209,23 @@
   animation: modalBackdropIn 0.38s ease forwards;
 }
 
+.modalBackdropDismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .modalBackdropClosing {
   animation: modalBackdropOut 0.36s ease forwards;
 }
 
 .eventModal {
+  position: relative;
+  z-index: 1;
   border: 1px solid #27272a;
   border-radius: 24px;
   background: #18181b;

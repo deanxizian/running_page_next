@@ -28,8 +28,13 @@ const EventModal = ({
     className={`${styles.modalBackdrop} ${
       vm.isClosing ? styles.modalBackdropClosing : ''
     }`}
-    onClick={onClose}
   >
+    <button
+      type="button"
+      className={styles.modalBackdropDismiss}
+      aria-label="Close event details"
+      onClick={onClose}
+    />
     <div
       className={`${styles.eventModal} ${
         vm.isClosing ? styles.eventModalClosing : ''
@@ -37,7 +42,6 @@ const EventModal = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby={vm.titleId}
-      onClick={(event) => event.stopPropagation()}
     >
       <small>{vm.selectedEvent.start_date_local.slice(0, 10)}</small>
       <strong id={vm.titleId}>{activityTitleForRun(vm.selectedEvent)}</strong>
