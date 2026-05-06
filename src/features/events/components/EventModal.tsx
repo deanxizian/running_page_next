@@ -35,7 +35,9 @@ const EventModal = ({
     },
     {
       label: 'Time:',
-      value: formatDuration(convertMovingTime2Sec(vm.selectedEvent.moving_time)),
+      value: formatDuration(
+        convertMovingTime2Sec(vm.selectedEvent.moving_time)
+      ),
     },
   ];
 
