@@ -24,7 +24,13 @@ const CalendarCell = ({
   const isSelectedCell = Boolean(
     selectedRun && cell.runs.some((run) => run.run_id === selectedRun.run_id)
   );
-  const calendarRun = isSelectedCell ? selectedRun : (cell.runs[0] ?? null);
+  const longestRun =
+    cell.runs.reduce<Activity | null>(
+      (longest, run) =>
+        !longest || run.distance > longest.distance ? run : longest,
+      null
+    ) ?? null;
+  const calendarRun = isSelectedCell ? selectedRun : longestRun;
   const canSelectCell = Boolean(calendarRun);
 
   return (

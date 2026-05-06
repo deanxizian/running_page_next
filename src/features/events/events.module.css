@@ -252,6 +252,37 @@
   font-family: var(--font-mono);
 }
 
+.eventModalStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.eventModalStat {
+  border: 1px solid #27272a;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.025);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.eventModalStatLabel {
+  color: #71717a;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.eventModalStatValue {
+  color: #d4d4d8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .eventModal {
   box-sizing: border-box;
   width: min(100%, 668px);

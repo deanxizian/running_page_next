@@ -23,44 +23,66 @@ const EventModal = ({
   vm: EventModalViewModel;
   onClose: () => void;
   onIgnoreViewStateUpdate: () => void;
-}) => (
-  <div
-    className={`${styles.modalBackdrop} ${
-      vm.isClosing ? styles.modalBackdropClosing : ''
-    }`}
-  >
-    <button
-      type="button"
-      className={styles.modalBackdropDismiss}
-      aria-label="Close event details"
-      onClick={onClose}
-    />
+}) => {
+  const eventStats = [
+    {
+      label: 'Distance:',
+      value: `${(vm.selectedEvent.distance / M_TO_DIST).toFixed(2)} ${DIST_UNIT}`,
+    },
+    {
+      label: 'Pace:',
+      value: `${formatPace(vm.selectedEvent.average_speed)}/${DIST_UNIT}`,
+    },
+    {
+      label: 'Time:',
+      value: formatDuration(convertMovingTime2Sec(vm.selectedEvent.moving_time)),
+    },
+  ];
+
+  return (
     <div
-      className={`${styles.eventModal} ${
-        vm.isClosing ? styles.eventModalClosing : ''
+      className={`${styles.modalBackdrop} ${
+        vm.isClosing ? styles.modalBackdropClosing : ''
       }`}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={vm.titleId}
     >
-      <small>{vm.selectedEvent.start_date_local.slice(0, 10)}</small>
-      <strong id={vm.titleId}>{activityTitleForRun(vm.selectedEvent)}</strong>
-      <span>
-        {`Distance ${(vm.selectedEvent.distance / M_TO_DIST).toFixed(2)} ${DIST_UNIT} · Pace ${formatPace(vm.selectedEvent.average_speed)}/${DIST_UNIT} · Time ${formatDuration(convertMovingTime2Sec(vm.selectedEvent.moving_time))}`}
-      </span>
-      <span className={styles.eventModalMap}>
-        <RunMap
-          viewState={vm.viewState}
-          geoData={vm.geoData}
-          countries={countries}
-          provinces={provinces}
-          setViewState={onIgnoreViewStateUpdate}
-          height={EVENT_MODAL_MAP_HEIGHT}
-          animateCamera={false}
-        />
-      </span>
+      <button
+        type="button"
+        className={styles.modalBackdropDismiss}
+        aria-label="Close event details"
+        onClick={onClose}
+      />
+      <div
+        className={`${styles.eventModal} ${
+          vm.isClosing ? styles.eventModalClosing : ''
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={vm.titleId}
+      >
+        <small>{vm.selectedEvent.start_date_local.slice(0, 10)}</small>
+        <strong id={vm.titleId}>{activityTitleForRun(vm.selectedEvent)}</strong>
+        <div className={styles.eventModalStats}>
+          {eventStats.map((stat) => (
+            <span key={stat.label} className={styles.eventModalStat}>
+              <span className={styles.eventModalStatLabel}>{stat.label}</span>
+              <span className={styles.eventModalStatValue}>{stat.value}</span>
+            </span>
+          ))}
+        </div>
+        <span className={styles.eventModalMap}>
+          <RunMap
+            viewState={vm.viewState}
+            geoData={vm.geoData}
+            countries={countries}
+            provinces={provinces}
+            setViewState={onIgnoreViewStateUpdate}
+            height={EVENT_MODAL_MAP_HEIGHT}
+            animateCamera={false}
+          />
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default EventModal;

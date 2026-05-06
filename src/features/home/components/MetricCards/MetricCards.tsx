@@ -19,7 +19,7 @@ const MetricCards = ({
   <>
     <MetricCard
       label="Total Distance"
-      value={vm.allDistance.toFixed(2)}
+      value={vm.allDistance.toFixed(1)}
       unit={` ${DIST_UNIT}`}
       detailIcons={['bolt', 'clock']}
       details={[`${vm.totalRunCount} runs`, formatDurationShort(vm.allSeconds)]}
@@ -32,7 +32,7 @@ const MetricCards = ({
     />
     <MetricCard
       label="Yearly Goal"
-      value={vm.yearDistance.toFixed(2)}
+      value={vm.yearDistance.toFixed(1)}
       unit={` / ${YEAR_GOAL} ${DIST_UNIT}`}
       detailIcons={['bolt', 'clock']}
       details={[
@@ -42,14 +42,14 @@ const MetricCards = ({
       progress={(vm.yearDistance / YEAR_GOAL) * 100}
       trend={{
         text: `${Math.abs(vm.yearDistance - vm.previousYearDistance).toFixed(
-          2
+          1
         )} ${DIST_UNIT} vs last year`,
         positive: vm.yearDistance >= vm.previousYearDistance,
       }}
     />
     <MetricCard
       label="Monthly Goal"
-      value={vm.monthDistance.toFixed(2)}
+      value={vm.monthDistance.toFixed(1)}
       unit={` / ${MONTH_GOAL} ${DIST_UNIT}`}
       detailIcons={['bolt', 'clock']}
       details={[
@@ -59,7 +59,7 @@ const MetricCards = ({
       progress={(vm.monthDistance / MONTH_GOAL) * 100}
       trend={{
         text: `${Math.abs(vm.monthDistance - vm.previousMonthDistance).toFixed(
-          2
+          1
         )} ${DIST_UNIT} vs last month`,
         positive: vm.monthDistance >= vm.previousMonthDistance,
       }}
