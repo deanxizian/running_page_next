@@ -141,7 +141,7 @@
   box-shadow: 0 0 2px 2px #0096ff;
 }
 .mapboxgl-ctrl button:disabled {
-  cursor: not-allowed;
+  cursor: default;
 }
 .mapboxgl-ctrl button:disabled .mapboxgl-ctrl-icon {
   opacity: 0.25;
