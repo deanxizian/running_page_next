@@ -6,7 +6,12 @@ import {
   buildActivitySnapshot,
   standardizeCountryName,
 } from './data/buildActivitySnapshot';
-import { monthKeyFor, shiftMonthKey, sortDateFunc } from './lib/date';
+import {
+  latestStartedMonthKey,
+  monthKeyFor,
+  shiftMonthKey,
+  sortDateFunc,
+} from './lib/date';
 import { formatDuration, formatPace } from './lib/format';
 import { groupActivities } from './lib/group';
 import { isMarathonEventRun } from './lib/event';
@@ -58,6 +63,13 @@ describe('activity date helpers', () => {
     expect(monthKeyFor('2026-05-01 08:00:00')).toBe('2026-05');
     expect(shiftMonthKey('2026-01', -1)).toBe('2025-12');
     expect(shiftMonthKey('2026-12', 1)).toBe('2027-01');
+  });
+
+  it('caps the latest selectable month at the current month', () => {
+    const today = new Date(2026, 4, 14);
+
+    expect(latestStartedMonthKey('2026-10', today)).toBe('2026-05');
+    expect(latestStartedMonthKey('2026-04', today)).toBe('2026-04');
   });
 });
 

@@ -9,14 +9,38 @@ import type { HomeMetricsViewModel } from '../../model/types';
 import { MetricCard } from '@/shared/ui/dashboard';
 import styles from '@/shared/ui/dashboard.module.css';
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const daysAgoFromLocalDate = (localDate: string) => {
+  const [year, month, day] = localDate.slice(0, 10).split('-').map(Number);
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const runDateUtc = Date.UTC(year, month - 1, day);
+
+  return Math.max(0, Math.round((todayUtc - runDateUtc) / DAY_IN_MS));
+};
+
+const lastRunTextFor = (localDate: string) => {
+  const daysAgo = daysAgoFromLocalDate(localDate);
+
+  if (daysAgo === 0) {
+    return 'last run today';
+  }
+
+  if (daysAgo === 1) {
+    return 'last run 1 day ago';
+  }
+
+  return `last run ${daysAgo} days ago`;
+};
+
 const latestRunFooterFor = (vm: HomeMetricsViewModel) => {
   if (!vm.latestRun) {
     return undefined;
   }
 
-  const date = vm.latestRun.start_date_local.slice(5, 10).replace('-', '/');
   return {
-    text: `${date} latest run`,
+    text: lastRunTextFor(vm.latestRun.start_date_local),
     icon: 'calendar' as const,
   };
 };
