@@ -465,6 +465,38 @@
   height: 18px;
 }
 
+@media (min-width: 761px) {
+  .totalMetricCard .metricDetails {
+    flex-wrap: nowrap;
+  }
+
+  .totalMetricCard .metricDetailItem {
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 680px) and (max-width: 760px) {
+  .metricsGrid .metricCard .metricDetails {
+    flex-wrap: nowrap;
+  }
+
+  .metricsGrid .metricCard .metricDetailItem {
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 521px) and (max-width: 679px) {
+  .metricsGrid .metricCard .metricDetails {
+    flex-flow: column nowrap;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .metricsGrid .metricCard .metricDetailItem {
+    white-space: nowrap;
+  }
+}
+
 .trendPositive {
   color: #fb7185;
 }
@@ -1240,7 +1272,7 @@
     min-height: 150px;
     border-radius: 12px;
     padding: 16px;
-    grid-template-rows: auto 34px 15px minmax(34px, auto) 18px;
+    grid-template-rows: auto 34px 15px 36px 18px;
     gap: 7px;
   }
 
@@ -1481,8 +1513,7 @@
     white-space: nowrap;
   }
 
-  .metricsGrid .totalMetricCard .metricProgressSlot,
-  .metricsGrid .totalMetricCard .metricTrendSlot {
+  .metricsGrid .totalMetricCard .metricProgressSlot {
     display: none;
   }
 }

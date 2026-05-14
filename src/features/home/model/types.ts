@@ -33,6 +33,7 @@ export type HomeMetricsViewModel = {
   previousMonthDistance: number;
   currentYearRuns: Activity[];
   currentMonthRuns: Activity[];
+  latestRun: Activity | null;
   totalTouchRevealResetSignal: number;
   clearEventTouchReveal: () => void;
 };

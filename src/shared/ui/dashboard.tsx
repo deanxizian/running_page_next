@@ -20,6 +20,7 @@ const MetricCard = ({
   stackDetails = false,
   progress,
   trend,
+  footer,
   onClick,
   overlay,
   className,
@@ -36,6 +37,10 @@ const MetricCard = ({
   trend?: {
     text: string;
     positive: boolean;
+  };
+  footer?: {
+    text: string;
+    icon?: MetricIconName;
   };
   onClick?: () => void;
   overlay?: string;
@@ -107,6 +112,15 @@ const MetricCard = ({
               <MetricIcon icon={trend.positive ? 'trendUp' : 'trendDown'} />
             </span>
             {trend.text}
+          </span>
+        ) : footer ? (
+          <span className={`${styles.metricTrend} ${styles.trendMuted}`}>
+            {footer.icon && (
+              <span className={styles.metricDetailIcon}>
+                <MetricIcon icon={footer.icon} />
+              </span>
+            )}
+            {footer.text}
           </span>
         ) : (
           <span className={styles.metricTrendPlaceholder} aria-hidden="true" />

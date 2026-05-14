@@ -9,6 +9,18 @@ import type { HomeMetricsViewModel } from '../../model/types';
 import { MetricCard } from '@/shared/ui/dashboard';
 import styles from '@/shared/ui/dashboard.module.css';
 
+const latestRunFooterFor = (vm: HomeMetricsViewModel) => {
+  if (!vm.latestRun) {
+    return undefined;
+  }
+
+  const date = vm.latestRun.start_date_local.slice(5, 10).replace('-', '/');
+  return {
+    text: `${date} latest run`,
+    icon: 'calendar' as const,
+  };
+};
+
 const MetricCards = ({
   vm,
   openHeatmap,
@@ -23,7 +35,7 @@ const MetricCards = ({
       unit={` ${DIST_UNIT}`}
       detailIcons={['bolt', 'clock']}
       details={[`${vm.totalRunCount} runs`, formatDurationShort(vm.allSeconds)]}
-      stackDetails
+      footer={latestRunFooterFor(vm)}
       overlay="点击打开热力图"
       onClick={openHeatmap}
       onTouchRevealStart={vm.clearEventTouchReveal}

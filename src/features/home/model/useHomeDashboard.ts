@@ -161,6 +161,7 @@ const useHomeDashboard = ({
       totalRunCount: sortedActivities.length,
       currentYearRuns: periodRuns.currentYearRuns,
       currentMonthRuns: periodRuns.currentMonthRuns,
+      latestRun,
       ...interactions.metrics,
     },
     eventSummary: {
