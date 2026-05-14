@@ -1336,9 +1336,9 @@
   }
 
   .barChart {
-    height: 150px;
-    min-height: 150px;
-    flex-basis: 150px;
+    height: clamp(200px, 50vw, 240px);
+    min-height: clamp(200px, 50vw, 240px);
+    flex-basis: clamp(200px, 50vw, 240px);
     margin-top: 22px;
   }
 
