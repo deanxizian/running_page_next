@@ -77,10 +77,11 @@ const MetricCards = ({
       ]}
       progress={(vm.yearDistance / YEAR_GOAL) * 100}
       trend={{
-        text: `${Math.abs(vm.yearDistance - vm.previousYearDistance).toFixed(
-          1
-        )} ${DIST_UNIT} vs last year`,
+        text: `${Math.abs(
+          vm.yearDistance - vm.lastYearSamePeriodDistance
+        ).toFixed(1)} ${DIST_UNIT} vs last year`,
         positive: vm.yearDistance >= vm.previousYearDistance,
+        iconPositive: vm.yearDistance >= vm.lastYearSamePeriodDistance,
       }}
     />
     <MetricCard
@@ -94,10 +95,11 @@ const MetricCards = ({
       ]}
       progress={(vm.monthDistance / MONTH_GOAL) * 100}
       trend={{
-        text: `${Math.abs(vm.monthDistance - vm.previousMonthDistance).toFixed(
-          1
-        )} ${DIST_UNIT} vs last month`,
+        text: `${Math.abs(
+          vm.monthDistance - vm.lastMonthSamePeriodDistance
+        ).toFixed(1)} ${DIST_UNIT} vs last month`,
         positive: vm.monthDistance >= vm.previousMonthDistance,
+        iconPositive: vm.monthDistance >= vm.lastMonthSamePeriodDistance,
       }}
     />
   </>

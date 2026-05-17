@@ -29,8 +29,10 @@ export type HomeMetricsViewModel = {
   totalRunCount: number;
   yearDistance: number;
   previousYearDistance: number;
+  lastYearSamePeriodDistance: number;
   monthDistance: number;
   previousMonthDistance: number;
+  lastMonthSamePeriodDistance: number;
   currentYearRuns: Activity[];
   currentMonthRuns: Activity[];
   latestRun: Activity | null;

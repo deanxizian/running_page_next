@@ -110,14 +110,17 @@ const useHomeDashboard = ({
   const periodRuns = currentPeriodRunsFor(
     activityGroups,
     thisYear,
-    latestMonth
+    latestMonth,
+    latestRun
   );
   const metricValues = metricsFor(
     sortedActivities,
     periodRuns.currentYearRuns,
     periodRuns.previousYearRuns,
+    periodRuns.lastYearSamePeriodRuns,
     periodRuns.currentMonthRuns,
-    periodRuns.previousMonthRuns
+    periodRuns.previousMonthRuns,
+    periodRuns.lastMonthSamePeriodRuns
   );
   const eventSummary = eventSummaryFor(
     periodRuns.currentYearRuns,

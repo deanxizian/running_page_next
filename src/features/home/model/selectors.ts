@@ -51,14 +51,41 @@ const pageForRun = (
   return Math.floor(runIndex / ROWS_PER_PAGE);
 };
 
+const localDateKeyFor = (run: Activity) => run.start_date_local.slice(0, 10);
+
+const daysInMonth = (year: number, month: number) =>
+  new Date(year, month, 0).getDate();
+
+const dateKeyFor = (year: number, month: number, day: number) =>
+  `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+const cutoffDateForYear = (year: number, anchorDateKey: string) => {
+  const [, anchorMonth, anchorDay] = anchorDateKey.split('-').map(Number);
+  return dateKeyFor(
+    year,
+    anchorMonth,
+    Math.min(anchorDay, daysInMonth(year, anchorMonth))
+  );
+};
+
+const cutoffDateForMonth = (monthKey: string, anchorDateKey: string) => {
+  const [year, month] = monthKey.split('-').map(Number);
+  const anchorDay = Number(anchorDateKey.slice(8, 10));
+  return dateKeyFor(year, month, Math.min(anchorDay, daysInMonth(year, month)));
+};
+
+const runsUpToDate = (runs: Activity[], cutoffDateKey: string) =>
+  runs.filter((run) => localDateKeyFor(run) <= cutoffDateKey);
+
 const currentPeriodRunsFor = (
   activityGroups: ActivityGroups,
   thisYear: string,
-  latestMonth: string
+  latestMonth: string,
+  latestRun: Activity | null
 ) => {
   const currentYearRuns =
     activityGroups.byYear.get(thisYear) ?? EMPTY_ACTIVITIES;
-  const previousYearRuns =
+  const lastYearRuns =
     activityGroups.byYear.get(String(Number(thisYear) - 1)) ?? EMPTY_ACTIVITIES;
   const currentMonthRuns = latestMonth
     ? (activityGroups.byMonth.get(latestMonth) ?? EMPTY_ACTIVITIES)
@@ -67,12 +94,40 @@ const currentPeriodRunsFor = (
   const previousMonthRuns = previousMonth
     ? (activityGroups.byMonth.get(previousMonth) ?? EMPTY_ACTIVITIES)
     : EMPTY_ACTIVITIES;
+  const anchorDateKey = latestRun?.start_date_local.slice(0, 10);
+
+  if (!anchorDateKey) {
+    return {
+      currentYearRuns,
+      previousYearRuns: lastYearRuns,
+      lastYearSamePeriodRuns: lastYearRuns,
+      currentMonthRuns,
+      previousMonthRuns,
+      lastMonthSamePeriodRuns: previousMonthRuns,
+    };
+  }
 
   return {
-    currentYearRuns,
-    previousYearRuns,
-    currentMonthRuns,
+    currentYearRuns: runsUpToDate(
+      currentYearRuns,
+      cutoffDateForYear(Number(thisYear), anchorDateKey)
+    ),
+    lastYearSamePeriodRuns: runsUpToDate(
+      lastYearRuns,
+      cutoffDateForYear(Number(thisYear) - 1, anchorDateKey)
+    ),
+    previousYearRuns: lastYearRuns,
+    currentMonthRuns: runsUpToDate(
+      currentMonthRuns,
+      cutoffDateForMonth(latestMonth, anchorDateKey)
+    ),
     previousMonthRuns,
+    lastMonthSamePeriodRuns: previousMonth
+      ? runsUpToDate(
+          previousMonthRuns,
+          cutoffDateForMonth(previousMonth, anchorDateKey)
+        )
+      : EMPTY_ACTIVITIES,
   };
 };
 
@@ -80,13 +135,17 @@ const metricsFor = (
   sortedActivities: Activity[],
   currentYearRuns: Activity[],
   previousYearRuns: Activity[],
+  lastYearSamePeriodRuns: Activity[],
   currentMonthRuns: Activity[],
-  previousMonthRuns: Activity[]
+  previousMonthRuns: Activity[],
+  lastMonthSamePeriodRuns: Activity[]
 ) => ({
   yearDistance: totalDistance(currentYearRuns),
   previousYearDistance: totalDistance(previousYearRuns),
+  lastYearSamePeriodDistance: totalDistance(lastYearSamePeriodRuns),
   monthDistance: totalDistance(currentMonthRuns),
   previousMonthDistance: totalDistance(previousMonthRuns),
+  lastMonthSamePeriodDistance: totalDistance(lastMonthSamePeriodRuns),
   allDistance: totalDistance(sortedActivities),
   allSeconds: totalSeconds(sortedActivities),
 });
