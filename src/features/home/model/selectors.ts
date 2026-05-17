@@ -99,10 +99,8 @@ const currentPeriodRunsFor = (
   if (!anchorDateKey) {
     return {
       currentYearRuns,
-      previousYearRuns: lastYearRuns,
       lastYearSamePeriodRuns: lastYearRuns,
       currentMonthRuns,
-      previousMonthRuns,
       lastMonthSamePeriodRuns: previousMonthRuns,
     };
   }
@@ -116,12 +114,10 @@ const currentPeriodRunsFor = (
       lastYearRuns,
       cutoffDateForYear(Number(thisYear) - 1, anchorDateKey)
     ),
-    previousYearRuns: lastYearRuns,
     currentMonthRuns: runsUpToDate(
       currentMonthRuns,
       cutoffDateForMonth(latestMonth, anchorDateKey)
     ),
-    previousMonthRuns,
     lastMonthSamePeriodRuns: previousMonth
       ? runsUpToDate(
           previousMonthRuns,
@@ -134,17 +130,13 @@ const currentPeriodRunsFor = (
 const metricsFor = (
   sortedActivities: Activity[],
   currentYearRuns: Activity[],
-  previousYearRuns: Activity[],
   lastYearSamePeriodRuns: Activity[],
   currentMonthRuns: Activity[],
-  previousMonthRuns: Activity[],
   lastMonthSamePeriodRuns: Activity[]
 ) => ({
   yearDistance: totalDistance(currentYearRuns),
-  previousYearDistance: totalDistance(previousYearRuns),
   lastYearSamePeriodDistance: totalDistance(lastYearSamePeriodRuns),
   monthDistance: totalDistance(currentMonthRuns),
-  previousMonthDistance: totalDistance(previousMonthRuns),
   lastMonthSamePeriodDistance: totalDistance(lastMonthSamePeriodRuns),
   allDistance: totalDistance(sortedActivities),
   allSeconds: totalSeconds(sortedActivities),

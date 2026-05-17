@@ -58,18 +58,14 @@ describe('home selectors', () => {
     const metrics = metricsFor(
       activities,
       periodRuns.currentYearRuns,
-      periodRuns.previousYearRuns,
       periodRuns.lastYearSamePeriodRuns,
       periodRuns.currentMonthRuns,
-      periodRuns.previousMonthRuns,
       periodRuns.lastMonthSamePeriodRuns
     );
 
     expect(metrics.yearDistance).toBe(140);
-    expect(metrics.previousYearDistance).toBe(320);
     expect(metrics.lastYearSamePeriodDistance).toBe(120);
     expect(metrics.monthDistance).toBe(20);
-    expect(metrics.previousMonthDistance).toBe(110);
     expect(metrics.lastMonthSamePeriodDistance).toBe(50);
   });
 });

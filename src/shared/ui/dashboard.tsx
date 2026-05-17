@@ -36,8 +36,7 @@ const MetricCard = ({
   progress?: number;
   trend?: {
     text: string;
-    positive: boolean;
-    iconPositive?: boolean;
+    iconPositive: boolean;
   };
   footer?: {
     text: string;
@@ -104,19 +103,9 @@ const MetricCard = ({
       </span>
       <span className={styles.metricTrendSlot}>
         {trend ? (
-          <span
-            className={`${styles.metricTrend} ${
-              trend.positive ? styles.trendPositive : styles.trendMuted
-            }`}
-          >
+          <span className={`${styles.metricTrend} ${styles.trendMuted}`}>
             <span className={styles.metricDetailIcon}>
-              <MetricIcon
-                icon={
-                  (trend.iconPositive ?? trend.positive)
-                    ? 'trendUp'
-                    : 'trendDown'
-                }
-              />
+              <MetricIcon icon={trend.iconPositive ? 'trendUp' : 'trendDown'} />
             </span>
             {trend.text}
           </span>

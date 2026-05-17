@@ -80,7 +80,6 @@ const MetricCards = ({
         text: `${Math.abs(
           vm.yearDistance - vm.lastYearSamePeriodDistance
         ).toFixed(1)} ${DIST_UNIT} vs last year`,
-        positive: vm.yearDistance >= vm.previousYearDistance,
         iconPositive: vm.yearDistance >= vm.lastYearSamePeriodDistance,
       }}
     />
@@ -98,7 +97,6 @@ const MetricCards = ({
         text: `${Math.abs(
           vm.monthDistance - vm.lastMonthSamePeriodDistance
         ).toFixed(1)} ${DIST_UNIT} vs last month`,
-        positive: vm.monthDistance >= vm.previousMonthDistance,
         iconPositive: vm.monthDistance >= vm.lastMonthSamePeriodDistance,
       }}
     />
