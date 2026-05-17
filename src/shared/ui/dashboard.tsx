@@ -111,7 +111,11 @@ const MetricCard = ({
           >
             <span className={styles.metricDetailIcon}>
               <MetricIcon
-                icon={(trend.iconPositive ?? trend.positive) ? 'trendUp' : 'trendDown'}
+                icon={
+                  (trend.iconPositive ?? trend.positive)
+                    ? 'trendUp'
+                    : 'trendDown'
+                }
               />
             </span>
             {trend.text}
