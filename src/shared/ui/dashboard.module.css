@@ -1523,11 +1523,11 @@
   }
 }
 
-@media (min-width: 390px) and (max-width: 520px) {
+@media (min-width: 430px) and (max-width: 520px) {
   .metricsGrid .metricCard:not(.totalMetricCard) .metricDetails {
     flex-flow: row nowrap;
     align-items: center;
-    gap: 4px;
+    gap: 8px 12px;
   }
 
   .metricsGrid .metricCard:not(.totalMetricCard) .metricDetailItem {
@@ -1535,11 +1535,11 @@
   }
 }
 
-@media (max-width: 389px) {
+@media (max-width: 429px) {
   .metricsGrid .metricCard:not(.totalMetricCard) .metricDetails {
     flex-flow: column nowrap;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
   }
 
   .metricsGrid .metricCard:not(.totalMetricCard) .metricDetailItem {
