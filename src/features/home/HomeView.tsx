@@ -58,11 +58,7 @@ const HomeView = ({
         </div>
 
         <aside className={styles.rightColumn}>
-          <EventSummaryCard
-            id="events"
-            thisYear={thisYear}
-            vm={dashboard.eventSummary}
-          />
+          <EventSummaryCard id="events" vm={dashboard.eventSummary} />
           <HomeMapPanel
             id="map-panel"
             vm={dashboard.map}

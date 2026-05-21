@@ -4,11 +4,9 @@ import styles from '@/shared/ui/dashboard.module.css';
 
 const EventSummaryCard = ({
   id,
-  thisYear,
   vm,
 }: {
   id?: string;
-  thisYear: string;
   vm: EventSummaryViewModel;
 }) => (
   <button
@@ -22,7 +20,7 @@ const EventSummaryCard = ({
     <span className={styles.eventCount}>{vm.marathonRuns.length}</span>
     <span className={styles.eventTitle}>
       <strong>Marathon Events</strong>
-      <span>in {thisYear}</span>
+      <span>in {vm.year}</span>
     </span>
     <span className={styles.latestFinish}>
       <span>Latest Finish</span>

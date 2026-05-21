@@ -79,22 +79,21 @@ const runsUpToDate = (runs: Activity[], cutoffDateKey: string) =>
 
 const currentPeriodRunsFor = (
   activityGroups: ActivityGroups,
-  thisYear: string,
-  latestMonth: string,
-  latestRun: Activity | null
+  anchorDateKey: string
 ) => {
+  const thisYear = anchorDateKey.slice(0, 4);
+  const currentMonth = anchorDateKey.slice(0, 7);
   const currentYearRuns =
     activityGroups.byYear.get(thisYear) ?? EMPTY_ACTIVITIES;
   const lastYearRuns =
     activityGroups.byYear.get(String(Number(thisYear) - 1)) ?? EMPTY_ACTIVITIES;
-  const currentMonthRuns = latestMonth
-    ? (activityGroups.byMonth.get(latestMonth) ?? EMPTY_ACTIVITIES)
+  const currentMonthRuns = currentMonth
+    ? (activityGroups.byMonth.get(currentMonth) ?? EMPTY_ACTIVITIES)
     : EMPTY_ACTIVITIES;
-  const previousMonth = latestMonth ? shiftMonthKey(latestMonth, -1) : '';
+  const previousMonth = currentMonth ? shiftMonthKey(currentMonth, -1) : '';
   const previousMonthRuns = previousMonth
     ? (activityGroups.byMonth.get(previousMonth) ?? EMPTY_ACTIVITIES)
     : EMPTY_ACTIVITIES;
-  const anchorDateKey = latestRun?.start_date_local.slice(0, 10);
 
   if (!anchorDateKey) {
     return {
@@ -116,7 +115,7 @@ const currentPeriodRunsFor = (
     ),
     currentMonthRuns: runsUpToDate(
       currentMonthRuns,
-      cutoffDateForMonth(latestMonth, anchorDateKey)
+      cutoffDateForMonth(currentMonth, anchorDateKey)
     ),
     lastMonthSamePeriodRuns: previousMonth
       ? runsUpToDate(

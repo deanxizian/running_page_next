@@ -20,6 +20,7 @@ import { useHomeInteractions } from './useHomeInteractions';
 import { useRunMapFocus } from './useRunMapFocus';
 import { createHomeDashboardState, homeReducer } from './homeReducer';
 import type { HomeDashboardViewModel } from './types';
+import { useTodayDateKey } from '@/shared/hooks/useTodayDateKey';
 
 type UseHomeDashboardParams = {
   years: string[];
@@ -42,6 +43,7 @@ const useHomeDashboard = ({
   earliestMonth,
   openEvents,
 }: UseHomeDashboardParams): HomeDashboardViewModel => {
+  const todayDateKey = useTodayDateKey();
   const [state, dispatch] = useReducer(
     homeReducer,
     { thisYear, latestMonth },
@@ -107,12 +109,7 @@ const useHomeDashboard = ({
     dispatch({ type: 'setPage', page: pageCount - 1 });
   }, [pageCount, state.page]);
 
-  const periodRuns = currentPeriodRunsFor(
-    activityGroups,
-    thisYear,
-    latestMonth,
-    latestRun
-  );
+  const periodRuns = currentPeriodRunsFor(activityGroups, todayDateKey);
   const metricValues = metricsFor(
     sortedActivities,
     periodRuns.currentYearRuns,
@@ -166,6 +163,7 @@ const useHomeDashboard = ({
       ...interactions.metrics,
     },
     eventSummary: {
+      year: todayDateKey.slice(0, 4),
       ...eventSummary,
       ...interactions.eventSummary,
     },

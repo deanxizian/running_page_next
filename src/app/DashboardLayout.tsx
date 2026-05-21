@@ -21,7 +21,7 @@ const DashboardLayout = () => {
   }, []);
 
   return (
-    <PageShell thisYear={activitySnapshot.thisYear || currentYear()}>
+    <PageShell thisYear={currentYear()}>
       <Outlet context={{ activitySnapshot }} />
     </PageShell>
   );

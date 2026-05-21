@@ -26,6 +26,11 @@ const monthOrderFor = (monthKey: string) => {
 const monthKeyForDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
+const dateKeyForDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+
 const latestStartedMonthKey = (latestMonthKey: string, today = new Date()) => {
   if (!latestMonthKey) {
     return latestMonthKey;
@@ -82,6 +87,7 @@ export {
   shiftMonthKey,
   monthOrderFor,
   monthKeyForDate,
+  dateKeyForDate,
   latestStartedMonthKey,
   isMonthWithinRange,
   clampMonthKey,

@@ -35,10 +35,9 @@ const activity = (
 };
 
 describe('home selectors', () => {
-  it('compares goals against the same period last year and last month', () => {
-    const latestRun = activity(1, '2026-05-17 08:00:00', 20000);
+  it('compares goals against the current date period last year and last month', () => {
     const activities = [
-      latestRun,
+      activity(1, '2026-05-17 08:00:00', 20000),
       activity(2, '2026-05-20 08:00:00', 300000),
       activity(3, '2026-01-10 08:00:00', 10000),
       activity(4, '2025-05-17 08:00:00', 90000),
@@ -49,12 +48,7 @@ describe('home selectors', () => {
     ];
     const groups = groupActivities(activities);
 
-    const periodRuns = currentPeriodRunsFor(
-      groups,
-      '2026',
-      '2026-05',
-      latestRun
-    );
+    const periodRuns = currentPeriodRunsFor(groups, '2026-05-21');
     const metrics = metricsFor(
       activities,
       periodRuns.currentYearRuns,
@@ -63,9 +57,9 @@ describe('home selectors', () => {
       periodRuns.lastMonthSamePeriodRuns
     );
 
-    expect(metrics.yearDistance).toBe(140);
-    expect(metrics.lastYearSamePeriodDistance).toBe(120);
-    expect(metrics.monthDistance).toBe(20);
-    expect(metrics.lastMonthSamePeriodDistance).toBe(50);
+    expect(metrics.yearDistance).toBe(440);
+    expect(metrics.lastYearSamePeriodDistance).toBe(320);
+    expect(metrics.monthDistance).toBe(320);
+    expect(metrics.lastMonthSamePeriodDistance).toBe(110);
   });
 });
