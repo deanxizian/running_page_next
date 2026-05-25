@@ -2,6 +2,7 @@ import datetime
 import logging
 import random
 import string
+import time
 
 from geopy.geocoders import Nominatim, options
 from sqlalchemy import (
@@ -121,6 +122,7 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
 
     for attempt in range(2):
         try:
+            time.sleep(1)
             return str(
                 g.reverse(
                     f"{start_point.lat}, {start_point.lon}",
