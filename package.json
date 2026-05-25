@@ -23,6 +23,7 @@
     "data:clean": "rm -f run_page/data.db src/static/activities.json",
     "data:validate": "python3 run_page/validate_activities.py src/static/activities.json",
     "data:sync:strava": "python3 run_page/strava_sync.py \"$STRAVA_CLIENT_ID\" \"$STRAVA_CLIENT_SECRET\" \"$STRAVA_CLIENT_REFRESH_TOKEN\" --only-run",
+    "data:sync:strava:refresh-locations": "python3 run_page/strava_sync.py \"$STRAVA_CLIENT_ID\" \"$STRAVA_CLIENT_SECRET\" \"$STRAVA_CLIENT_REFRESH_TOKEN\" --only-run --force --refresh-locations",
     "build": "vite build",
     "dev": "vite dev",
     "lint": "eslint .",

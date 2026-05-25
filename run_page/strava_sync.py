@@ -15,6 +15,7 @@ def run_strava_sync(
     sync_types: list[str] | None = None,
     only_run: bool = False,
     force: bool = False,
+    refresh_locations: bool = False,
 ):
     sync_types = sync_types or []
     generator = Generator(SQL_FILE)
@@ -24,7 +25,7 @@ def run_strava_sync(
         only_run = True
     # if you want to refresh data change False to True
     generator.only_run = only_run
-    generator.sync(force)
+    generator.sync(force, refresh_locations=refresh_locations)
 
     activities_list = generator.load()
     with open(JSON_FILE, "w") as f:
@@ -48,6 +49,12 @@ if __name__ == "__main__":
         action="store_true",
         help="sync all available Strava activities instead of recent activities only",
     )
+    parser.add_argument(
+        "--refresh-locations",
+        dest="refresh_locations",
+        action="store_true",
+        help="refresh location_country for existing activities",
+    )
     options = parser.parse_args()
     run_strava_sync(
         options.client_id,
@@ -55,4 +62,5 @@ if __name__ == "__main__":
         options.refresh_token,
         only_run=options.only_run,
         force=options.force,
+        refresh_locations=options.refresh_locations,
     )

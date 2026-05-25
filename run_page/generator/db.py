@@ -100,10 +100,11 @@ class Activity(Base):
         return out
 
 
-def resolve_location_country(run_activity, current_location=None):
+def resolve_location_country(run_activity, current_location=None, prefer_current=True):
     strava_location = getattr(run_activity, "location_country", "") or ""
     if (
-        current_location
+        prefer_current
+        and current_location
         and current_location != "China"
         and strava_location in ("", "China")
     ):
@@ -139,7 +140,7 @@ def resolve_location_country(run_activity, current_location=None):
     return location_country
 
 
-def update_or_create_activity(session, run_activity):
+def update_or_create_activity(session, run_activity, refresh_locations=False):
     created = False
     try:
         activity = (
@@ -184,9 +185,15 @@ def update_or_create_activity(session, run_activity):
             session.add(activity)
             created = True
         else:
-            location_country = resolve_location_country(
-                run_activity, activity.location_country
-            )
+            current_location = activity.location_country
+            if refresh_locations or not current_location or current_location == "China":
+                location_country = resolve_location_country(
+                    run_activity,
+                    current_location,
+                    prefer_current=not refresh_locations,
+                )
+            else:
+                location_country = current_location
             activity.name = run_activity.name
             activity.distance = float(run_activity.distance)
             activity.moving_time = run_activity.moving_time

@@ -2,9 +2,17 @@ name: Run Data Sync
 
 on:
   workflow_dispatch:
+    inputs:
+      refresh_locations:
+        description: Refresh location_country for existing activities
+        required: false
+        default: false
+        type: boolean
   schedule:
-    # Runs every day at 00:00 and 12:00 Asia-Shanghai / 16:00 and 04:00 UTC.
-    - cron: '0 16,4 * * *'
+    # Normal daily sync at 00:00 Asia-Shanghai / 16:00 UTC.
+    - cron: '0 16 2-31 * *'
+    # Monthly sync with existing-location refresh on the 1st.
+    - cron: '0 16 1 * *'
 
 permissions:
   contents: write
@@ -12,6 +20,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  REFRESH_LOCATIONS: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 16 1 * *') || (github.event_name == 'workflow_dispatch' && inputs.refresh_locations) }}
 
 concurrency:
   group: strava-data-sync
@@ -43,8 +52,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: run_page/data.db
-          key: strava-data-${{ runner.os }}-${{ github.ref_name }}
+          key: strava-data-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
+            strava-data-${{ runner.os }}-${{ github.ref_name }}-
             strava-data-${{ runner.os }}-
 
       - name: Sync running activities from Strava
@@ -56,7 +66,11 @@ jobs:
           test -n "$STRAVA_CLIENT_ID"
           test -n "$STRAVA_CLIENT_SECRET"
           test -n "$STRAVA_CLIENT_REFRESH_TOKEN"
-          python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" --only-run
+          sync_args=(--only-run)
+          if [ "$REFRESH_LOCATIONS" = "true" ]; then
+            sync_args+=(--force --refresh-locations)
+          fi
+          python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" "${sync_args[@]}"
 
       - name: Validate generated activities
         run: python run_page/validate_activities.py src/static/activities.json

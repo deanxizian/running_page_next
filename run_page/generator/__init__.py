@@ -145,7 +145,7 @@ class Generator:
         self.client.access_token = response["access_token"]
         logger.info("Strava access token refreshed")
 
-    def sync(self, force):
+    def sync(self, force, refresh_locations=False):
         """
         Sync activities means sync from strava
         TODO, better name later
@@ -170,7 +170,11 @@ class Generator:
             #  strava use total_elevation_gain as elevation_gain
             activity.elevation_gain = activity.total_elevation_gain
             activity.subtype = activity.type
-            created = update_or_create_activity(self.session, activity)
+            created = update_or_create_activity(
+                self.session,
+                activity,
+                refresh_locations=refresh_locations,
+            )
             if created:
                 sys.stdout.write("+")
             else:
