@@ -65,11 +65,12 @@ describe('activity date helpers', () => {
     expect(shiftMonthKey('2026-12', 1)).toBe('2027-01');
   });
 
-  it('caps the latest selectable month at the current month', () => {
+  it('uses the current month as the latest selectable month once it has started', () => {
     const today = new Date(2026, 4, 14);
 
     expect(latestStartedMonthKey('2026-10', today)).toBe('2026-05');
-    expect(latestStartedMonthKey('2026-04', today)).toBe('2026-04');
+    expect(latestStartedMonthKey('2026-05', today)).toBe('2026-05');
+    expect(latestStartedMonthKey('2026-04', today)).toBe('2026-05');
   });
 });
 

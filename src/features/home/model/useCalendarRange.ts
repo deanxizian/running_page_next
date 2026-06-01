@@ -2,12 +2,12 @@ import { useCallback } from 'react';
 import {
   clampMonthKey,
   isMonthWithinRange,
-  latestStartedMonthKey,
 } from '@/entities/activity/lib/date';
 
-const useCalendarRange = (earliestMonth: string, latestMonth: string) => {
-  const latestSelectableMonth = latestStartedMonthKey(latestMonth);
-
+const useCalendarRange = (
+  earliestMonth: string,
+  latestSelectableMonth: string
+) => {
   const isMonthWithinActivityRange = useCallback(
     (monthKey: string) =>
       isMonthWithinRange(monthKey, earliestMonth, latestSelectableMonth),

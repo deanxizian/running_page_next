@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useReducer } from 'react';
 import type { Activity } from '@/entities/activity/model/types';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
-import { shiftMonthKey } from '@/entities/activity/lib/date';
+import {
+  latestStartedMonthKey,
+  shiftMonthKey,
+} from '@/entities/activity/lib/date';
 import {
   activitiesForFilter,
   calendarFor,
@@ -44,20 +47,21 @@ const useHomeDashboard = ({
   openEvents,
 }: UseHomeDashboardParams): HomeDashboardViewModel => {
   const todayDateKey = useTodayDateKey();
+  const latestSelectableMonth = latestStartedMonthKey(latestMonth);
   const [state, dispatch] = useReducer(
     homeReducer,
-    { thisYear, latestMonth },
+    { thisYear, latestMonth: latestSelectableMonth },
     createHomeDashboardState
   );
   const { isMonthWithinActivityRange, clampMonthToActivityRange } =
-    useCalendarRange(earliestMonth, latestMonth);
+    useCalendarRange(earliestMonth, latestSelectableMonth);
   const interactions = useHomeInteractions(openEvents);
   const actions = useHomeActions({
     activityGroups,
     clampMonthToActivityRange,
     dispatch,
     earliestMonth,
-    latestMonth,
+    latestMonth: latestSelectableMonth,
     sortedActivities,
     state,
     thisYear,
@@ -65,8 +69,8 @@ const useHomeDashboard = ({
   });
 
   useEffect(() => {
-    dispatch({ type: 'initializeMonth', monthKey: latestMonth });
-  }, [latestMonth]);
+    dispatch({ type: 'initializeMonth', monthKey: latestSelectableMonth });
+  }, [latestSelectableMonth]);
 
   useEffect(() => {
     if (
@@ -80,13 +84,13 @@ const useHomeDashboard = ({
       type: 'clampMonth',
       monthKey: clampMonthToActivityRange(state.calendarMonth),
       earliestMonth,
-      latestMonth,
+      latestMonth: latestSelectableMonth,
     });
   }, [
     clampMonthToActivityRange,
     earliestMonth,
     isMonthWithinActivityRange,
-    latestMonth,
+    latestSelectableMonth,
     state.calendarMonth,
   ]);
 
@@ -133,7 +137,7 @@ const useHomeDashboard = ({
   );
   const monthlyChartYear = monthlyChartYearFor(
     state.calendarMonth,
-    latestMonth,
+    latestSelectableMonth,
     thisYear
   );
   const monthlyBars = useMemo(
@@ -200,7 +204,7 @@ const useHomeDashboard = ({
         interactions.monthlyChart.hoveredMonthKey ??
         interactions.monthlyChart.previewedMonthlyBarKey ??
         state.calendarMonth ??
-        latestMonth,
+        latestSelectableMonth,
       olderMonthlyChartYear: chartYears.olderMonthlyChartYear,
       newerMonthlyChartYear: chartYears.newerMonthlyChartYear,
       slideDirection: state.monthlyChartSlideDirection,

@@ -36,11 +36,7 @@ const latestStartedMonthKey = (latestMonthKey: string, today = new Date()) => {
     return latestMonthKey;
   }
 
-  const currentMonthKey = monthKeyForDate(today);
-
-  return monthOrderFor(latestMonthKey) > monthOrderFor(currentMonthKey)
-    ? currentMonthKey
-    : latestMonthKey;
+  return monthKeyForDate(today);
 };
 
 const isMonthWithinRange = (
