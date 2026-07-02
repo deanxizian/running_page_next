@@ -804,7 +804,9 @@ Reduced motion：
 桌面 hover 必须写在：
 
 ```css
-@media (hover: hover) and (pointer: fine)
+@media (hover: hover) and (pointer: fine) {
+  /* Hover-only styles */
+}
 ```
 
 原因：
