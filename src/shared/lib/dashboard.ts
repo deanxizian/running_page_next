@@ -32,10 +32,6 @@ import {
   getRoutePath,
   viewStatesNearlyEqual,
 } from '@/entities/activity/lib/route';
-import type {
-  RacePbCategory,
-  SummaryStats,
-} from '@/entities/activity/lib/stats';
 
 const ROWS_PER_PAGE = 16;
 const YEAR_GOAL = 3000;
@@ -111,4 +107,3 @@ export {
   getEventModalMapViewport,
   getEventModalViewState,
 };
-export type { SummaryStats, RacePbCategory };

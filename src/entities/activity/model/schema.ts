@@ -108,4 +108,4 @@ const isActivity = (value: unknown): value is Activity => {
   );
 };
 
-export { REQUIRED_ACTIVITY_FIELDS, isActivity, localStartFieldsFor };
+export { isActivity, localStartFieldsFor };
