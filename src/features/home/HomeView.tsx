@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
 import type { Activity } from '@/entities/activity/model/types';
 import ActivityLog from '@/features/home/components/ActivityLog/ActivityLog';

@@ -9,9 +9,6 @@ const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
 const monthKeyFor = (value: string | Pick<Activity, 'month_key'>) =>
   typeof value === 'string' ? value.slice(0, 7) : value.month_key;
 
-const yearKeyFor = (value: string | Pick<Activity, 'year_key'>) =>
-  typeof value === 'string' ? value.slice(0, 4) : value.year_key;
-
 const shiftMonthKey = (monthKey: string, delta: number) => {
   const [year, month] = monthKey.split('-').map(Number);
   const date = new Date(year, month - 1 + delta, 1);
@@ -79,10 +76,8 @@ export {
   sortDateFunc,
   getMondayFirstDayIndex,
   monthKeyFor,
-  yearKeyFor,
   shiftMonthKey,
   monthOrderFor,
-  monthKeyForDate,
   dateKeyForDate,
   latestStartedMonthKey,
   isMonthWithinRange,

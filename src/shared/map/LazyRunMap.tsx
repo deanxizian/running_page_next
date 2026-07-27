@@ -20,4 +20,3 @@ const LazyRunMap = (props: RunMapProps) => (
 );
 
 export default LazyRunMap;
-export type { RunMapProps };

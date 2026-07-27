@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router';
+import { getRoutePath } from '@/entities/activity/lib/route';
 import type { Activity } from '@/entities/activity/model/types';
 import { useTouchRevealAction } from '@/shared/hooks/useTouchInteractions';
 import {
   NAV_LINKS,
   NAV_INDICATOR_STEP_DURATION_MS,
-  getRoutePath,
   navIndexForPath,
 } from '@/shared/lib/dashboard';
 import styles from '@/shared/ui/dashboard.module.css';

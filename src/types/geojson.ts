@@ -1,4 +1,4 @@
-export type Position = number[];
+type Position = number[];
 
 export interface LineString {
   type: 'LineString';

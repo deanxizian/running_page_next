@@ -1,15 +1,16 @@
 import type { Activity } from '@/entities/activity/model/types';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
-import { shiftMonthKey } from '@/entities/activity/lib/date';
 import {
-  EMPTY_ACTIVITIES,
-  ROWS_PER_PAGE,
-  formatMonthlyBarDistance,
   getMondayFirstDayIndex,
+  shiftMonthKey,
+} from '@/entities/activity/lib/date';
+import { formatMonthlyBarDistance } from '@/entities/activity/lib/format';
+import {
   isMarathonEventRun,
   totalDistance,
   totalSeconds,
-} from '@/shared/lib/dashboard';
+} from '@/entities/activity/lib/stats';
+import { EMPTY_ACTIVITIES, ROWS_PER_PAGE } from '@/shared/lib/dashboard';
 import type { CalendarCellViewModel, MonthlyBarViewModel } from './types';
 
 const activitiesForFilter = (

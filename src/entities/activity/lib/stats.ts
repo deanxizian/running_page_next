@@ -2,7 +2,7 @@ import type { Activity } from '../model/types';
 import { M_TO_DIST, convertMovingTime2Sec, formatPaceDuration } from './format';
 import { titleForRun } from './title';
 
-export interface SummaryStats {
+interface SummaryStats {
   distance: number;
   count: number;
   seconds: number;

@@ -16,7 +16,7 @@ export type HomeDashboardState = {
   monthlyChartSlideDirection: HomeSlideDirection;
 };
 
-export type CreateHomeStateParams = {
+type CreateHomeStateParams = {
   thisYear: string;
   latestMonth: string;
 };

@@ -1,8 +1,9 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router';
 
 export const router = createBrowserRouter(
   [
     {
+      HydrateFallback: () => null,
       lazy: async () => {
         const { default: DashboardLayout } =
           await import('@/app/DashboardLayout');
@@ -33,7 +34,6 @@ export const router = createBrowserRouter(
             return { Component: EventsPage };
           },
         },
-        { path: 'mls', element: <Navigate to="/events" replace /> },
         {
           path: '*',
           lazy: async () => {

@@ -1,10 +1,6 @@
-import {
-  DIST_UNIT,
-  MONTH_GOAL,
-  YEAR_GOAL,
-  totalSeconds,
-} from '@/shared/lib/dashboard';
-import { formatDurationShort } from '@/entities/activity/lib/format';
+import { DIST_UNIT, formatDurationShort } from '@/entities/activity/lib/format';
+import { totalSeconds } from '@/entities/activity/lib/stats';
+import { MONTH_GOAL, YEAR_GOAL } from '@/shared/lib/dashboard';
 import type { HomeMetricsViewModel } from '../../model/types';
 import { MetricCard } from '@/shared/ui/dashboard';
 import styles from '@/shared/ui/dashboard.module.css';

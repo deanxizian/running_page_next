@@ -1,16 +1,15 @@
 import { PointerEvent as ReactPointerEvent, useCallback, useMemo } from 'react';
+import { getMondayFirstDayIndex } from '@/entities/activity/lib/date';
 import type { ActivityGroups } from '@/entities/activity/lib/group';
 import type { Activity } from '@/entities/activity/model/types';
-import { DIST_UNIT } from '@/entities/activity/lib/format';
-import { useTouchPreview } from '@/shared/hooks/useTouchInteractions';
 import {
-  EMPTY_ACTIVITIES,
-  getMondayFirstDayIndex,
-  totalDistance,
-  summarizeRuns,
-  formatRoundedHours,
+  DIST_UNIT,
   formatDurationShort,
-} from '@/shared/lib/dashboard';
+  formatRoundedHours,
+} from '@/entities/activity/lib/format';
+import { summarizeRuns, totalDistance } from '@/entities/activity/lib/stats';
+import { useTouchPreview } from '@/shared/hooks/useTouchInteractions';
+import { EMPTY_ACTIVITIES } from '@/shared/lib/dashboard';
 import sharedStyles from '@/shared/ui/dashboard.module.css';
 import styles from './heatmap.module.css';
 

@@ -248,22 +248,6 @@ class Generator:
                 len(stale_activities),
             )
 
-    def _remove_legacy_synthetic_indoor_routes(self):
-        """Remove routes fabricated by the retired no-GPS indoor heuristic."""
-        legacy_activities = (
-            self.session.query(Activity).filter(Activity.subtype == "indoor").all()
-        )
-        for activity in legacy_activities:
-            activity.subtype = activity.type
-            activity.summary_polyline = ""
-
-        if legacy_activities:
-            self.session.commit()
-            logger.info(
-                "Removed %s legacy synthetic indoor routes",
-                len(legacy_activities),
-            )
-
     def sync(self, force, refresh_locations=False, on_token_refreshed=None):
         """Synchronize activities from Strava into the local cache."""
         latest_refresh_token = self.check_access()
@@ -315,8 +299,6 @@ class Generator:
         return latest_refresh_token
 
     def load(self):
-        self._remove_legacy_synthetic_indoor_routes()
-
         query = self.session.query(Activity).filter(Activity.distance > 0.1)
         if self.only_run:
             query = query.filter(Activity.type == "Run")

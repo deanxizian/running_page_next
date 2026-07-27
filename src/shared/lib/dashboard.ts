@@ -1,37 +1,4 @@
 import type { Activity } from '@/entities/activity/model/types';
-import {
-  DIST_UNIT,
-  M_TO_DIST,
-  formatDuration,
-  formatDurationShort,
-  formatMonthlyBarDistance,
-  formatRoundedHours,
-} from '@/entities/activity/lib/format';
-import {
-  clampMonthKey,
-  getMondayFirstDayIndex,
-  isMonthWithinRange,
-  monthKeyFor,
-  monthOrderFor,
-  shiftMonthKey,
-} from '@/entities/activity/lib/date';
-import {
-  activityTitleForRun,
-  getRacePbCategory,
-  isMarathonEventRun,
-  summarizeRuns,
-  totalDistance,
-  totalSeconds,
-} from '@/entities/activity/lib/stats';
-import {
-  emphasizePrimaryRuns,
-  getBoundsForRuns,
-  getEventModalMapViewport,
-  getEventModalViewState,
-  getIntroViewState,
-  getRoutePath,
-  viewStatesNearlyEqual,
-} from '@/entities/activity/lib/route';
 
 const ROWS_PER_PAGE = 16;
 const YEAR_GOAL = 3000;
@@ -53,7 +20,7 @@ const NAV_LINKS = [
 const NAV_INDICATOR_STEP_DURATION_MS = 340;
 
 const navIndexForPath = (pathname: string) => {
-  if (pathname.startsWith('/events') || pathname.startsWith('/mls')) {
+  if (pathname.startsWith('/events')) {
     return 2;
   }
 
@@ -81,29 +48,4 @@ export {
   NAV_INDICATOR_STEP_DURATION_MS,
   navIndexForPath,
   WEEKDAY_LABELS,
-  DIST_UNIT,
-  M_TO_DIST,
-  monthKeyFor,
-  shiftMonthKey,
-  monthOrderFor,
-  isMonthWithinRange,
-  clampMonthKey,
-  getMondayFirstDayIndex,
-  formatDuration,
-  formatDurationShort,
-  formatRoundedHours,
-  totalDistance,
-  totalSeconds,
-  formatMonthlyBarDistance,
-  activityTitleForRun,
-  isMarathonEventRun,
-  getRacePbCategory,
-  summarizeRuns,
-  getRoutePath,
-  emphasizePrimaryRuns,
-  getBoundsForRuns,
-  getIntroViewState,
-  viewStatesNearlyEqual,
-  getEventModalMapViewport,
-  getEventModalViewState,
 };

@@ -148,23 +148,6 @@ class PublicActivityTests(unittest.TestCase):
         self.assertEqual(sanitized["moving_time"], activity["moving_time"])
         self.assertEqual(sanitized["average_speed"], activity["average_speed"])
 
-    def test_load_removes_routes_created_by_the_retired_indoor_heuristic(self):
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            generator = Generator(os.path.join(temporary_directory, "data.db"))
-            legacy_route = polyline.encode([(31.0, 121.0), (31.01, 121.01)])
-            legacy_activity = cached_activity(1, summary_polyline=legacy_route)
-            legacy_activity.subtype = "indoor"
-            generator.session.add(legacy_activity)
-            generator.session.commit()
-
-            activities = generator.load()
-            migrated = generator.session.get(Activity, 1)
-
-            self.assertEqual(activities[0]["subtype"], "Run")
-            self.assertEqual(activities[0]["summary_polyline"], "")
-            self.assertEqual(migrated.subtype, "Run")
-            self.assertEqual(migrated.summary_polyline, "")
-
 
 class SyncTests(unittest.TestCase):
     def test_successful_full_sync_reconciles_stale_runs(self):

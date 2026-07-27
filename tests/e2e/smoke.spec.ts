@@ -18,6 +18,12 @@ test.describe('app smoke', () => {
     });
   }
 
+  test('unknown routes render the not-found page', async ({ page }) => {
+    await page.goto('/missing-page');
+
+    await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
+  });
+
   test('map provider controls stay hidden', async ({ page }) => {
     await page.goto('/');
 
