@@ -11,7 +11,7 @@ const DeferredTelemetry = () => {
   );
 
   useEffect(() => {
-    if (!import.meta.env.PROD) {
+    if (!import.meta.env.PROD || import.meta.env.VERCEL !== '1') {
       return undefined;
     }
 
