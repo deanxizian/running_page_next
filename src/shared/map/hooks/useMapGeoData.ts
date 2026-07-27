@@ -13,6 +13,20 @@ type UseMapGeoDataParams = {
   isChineseLocale: boolean;
 };
 
+let localizedMapDataPromise: Promise<FeatureCollection<RPGeometry>> | null =
+  null;
+
+const loadLocalizedMapData = () => {
+  if (!localizedMapDataPromise) {
+    localizedMapDataPromise = geoJsonForMap().catch((error: unknown) => {
+      localizedMapDataPromise = null;
+      throw error;
+    });
+  }
+
+  return localizedMapDataPromise;
+};
+
 const useMapGeoData = ({
   geoData,
   isBigMap,
@@ -20,30 +34,31 @@ const useMapGeoData = ({
 }: UseMapGeoDataParams) => {
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
-  const [isLoadingMapData, setIsLoadingMapData] = useState(false);
 
   useEffect(() => {
     if (
       !shouldLoadLocalizedMapData(
         isBigMap,
         isChineseLocale,
-        Boolean(mapGeoData),
-        isLoadingMapData
+        Boolean(mapGeoData)
       )
     ) {
       return;
     }
 
-    setIsLoadingMapData(true);
-    geoJsonForMap()
+    let cancelled = false;
+    loadLocalizedMapData()
       .then((data) => {
-        setMapGeoData(data);
-        setIsLoadingMapData(false);
+        if (!cancelled) {
+          setMapGeoData(data);
+        }
       })
-      .catch(() => {
-        setIsLoadingMapData(false);
-      });
-  }, [isBigMap, isChineseLocale, isLoadingMapData, mapGeoData]);
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isBigMap, isChineseLocale, mapGeoData]);
 
   return useMemo(
     () => combinedMapGeoDataFor(geoData, mapGeoData, isBigMap, isChineseLocale),

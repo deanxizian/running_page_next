@@ -98,7 +98,7 @@ const useMapCamera = ({
       zoom: targetZoom,
       duration: CAMERA_TRANSITION_MS,
       easing: easeOutCamera,
-      essential: true,
+      essential: false,
     });
 
     cameraAnimationTimeoutRef.current = window.setTimeout(() => {

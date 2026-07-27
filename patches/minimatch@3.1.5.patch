@@ -1,0 +1,10 @@
+diff --git a/minimatch.js b/minimatch.js
+index 2f8a8a8..5ef8154 100644
+--- a/minimatch.js
++++ b/minimatch.js
+@@ -10 +10,4 @@
+-var expand = require('brace-expansion')
++var braceExpansion = require('brace-expansion')
++// brace-expansion v5 exports a named function; v1 exported the function
++// directly. Support both shapes so the security-fixed implementation works.
++var expand = braceExpansion.expand || braceExpansion

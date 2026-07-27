@@ -149,7 +149,11 @@ const useHomeDashboard = ({
       ),
     [activityGroups, isMonthWithinActivityRange, monthlyChartYear]
   );
-  const chartYears = chartYearsFor(years, monthlyChartYear);
+  const chartYears = chartYearsFor(
+    years,
+    monthlyChartYear,
+    latestSelectableMonth.slice(0, 4)
+  );
   const previousCalendarMonth = state.calendarMonth
     ? shiftMonthKey(state.calendarMonth, -1)
     : '';

@@ -18,6 +18,14 @@ test.describe('app smoke', () => {
     });
   }
 
+  test('map provider controls stay hidden', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('.mapboxgl-map').first()).toBeVisible();
+    await expect(page.locator('.mapboxgl-ctrl-logo')).toBeHidden();
+    await expect(page.locator('.mapboxgl-ctrl-attrib')).toBeHidden();
+  });
+
   test('events modal opens and closes with Escape', async ({ page }) => {
     await page.goto('/events');
 

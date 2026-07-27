@@ -24,10 +24,11 @@ Common checks:
 
 ```bash
 pnpm check              # typecheck, lint, format check, unit tests, build
-pnpm check:ci           # pnpm check + Python lint + Playwright smoke tests
+pnpm check:ci           # pnpm check + Python checks/tests + Playwright smoke tests
 pnpm test               # unit tests
 pnpm test:e2e           # Playwright smoke tests
 pnpm python:check       # Ruff checks for Python scripts
+pnpm python:test        # sync, privacy, and data validation tests
 ```
 
 Data commands:
@@ -75,7 +76,22 @@ Strava sync:
 STRAVA_CLIENT_ID
 STRAVA_CLIENT_SECRET
 STRAVA_CLIENT_REFRESH_TOKEN
+STRAVA_TOKEN_ROTATION_PAT
+NOMINATIM_USER_AGENT       optional, defaults to running_page_next
+IGNORE_START_END_RANGE     optional, metres hidden at each route end; defaults to 10
 ```
+
+For GitHub Actions, set the optional values above as repository Variables, not
+Secrets.
+
+`STRAVA_TOKEN_ROTATION_PAT` is a fine-grained GitHub token that can update
+repository Actions secrets. The sync workflow uses it only to persist a rotated
+`STRAVA_CLIENT_REFRESH_TOKEN`.
+
+Public export keeps only coarse administrative location text and hides the
+configured cumulative route length from the beginning and end. It does not
+remove later route points that pass the start again, and the SQLite cache keeps
+the original route.
 
 ## Deploy
 
@@ -89,4 +105,7 @@ Output Directory: dist
 
 GitHub Pages is deployed by `.github/workflows/gh-pages.yml`; set Pages source to GitHub Actions.
 
-Daily Strava sync is handled by `.github/workflows/run_data_sync.yml`.
+Daily Strava sync is handled by `.github/workflows/run_data_sync.yml`. Days
+2–31 use an incremental sync. The first day of each month performs a full sync,
+refreshes existing locations, and removes stale cache records only after the
+full Strava traversal succeeds.

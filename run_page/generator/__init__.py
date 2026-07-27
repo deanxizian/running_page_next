@@ -13,17 +13,46 @@ from .db import Activity, init_db, update_or_create_activity
 
 logger = logging.getLogger(__name__)
 
-# Bounding box spread threshold (degrees) for indoor activity detection.
-# 0.002° ≈ 220m, which covers treadmill GPS drift.
-INDOOR_SPREAD_THRESHOLD = float(os.getenv("INDOOR_SPREAD_THRESHOLD", "0.002"))
 
-# Distance (degrees) to decide if a route is a loop (start ≈ end).
-_LOOP_CLOSE_THRESHOLD = 0.003  # ~330m
+def _nonnegative_float_env(name, default):
+    raw_value = os.getenv(name, str(default))
+    try:
+        value = float(raw_value)
+        if not math.isfinite(value):
+            raise ValueError
+        return max(0.0, value)
+    except ValueError:
+        logger.warning(
+            "%s=%r is invalid; using %.1f",
+            name,
+            raw_value,
+            default,
+        )
+        return float(default)
+
+
+# Hide this much route length from both ends of every public polyline.
+# The raw Strava polyline remains unchanged in the local SQLite cache.
+IGNORE_START_END_RANGE = _nonnegative_float_env("IGNORE_START_END_RANGE", 10)
+
+_CHINESE_MUNICIPALITIES = frozenset(
+    {
+        "北京市",
+        "上海市",
+        "天津市",
+        "重庆市",
+        "香港特别行政区",
+        "澳门特别行政区",
+    }
+)
+_CHINESE_PROVINCE_SUFFIXES = ("省", "自治区")
+_CHINESE_CITY_SUFFIXES = ("市", "自治州", "盟", "地区")
+_CHINESE_DISTRICT_SUFFIXES = ("区", "县")
 
 
 def _haversine(lat1, lon1, lat2, lon2):
     """Return distance in metres between two WGS-84 points."""
-    R = 6_371_000
+    earth_radius_m = 6_371_000
     rlat1, rlat2 = math.radians(lat1), math.radians(lat2)
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
@@ -31,90 +60,146 @@ def _haversine(lat1, lon1, lat2, lon2):
         math.sin(dlat / 2) ** 2
         + math.cos(rlat1) * math.cos(rlat2) * math.sin(dlon / 2) ** 2
     )
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    a = min(1.0, max(0.0, a))
+    return earth_radius_m * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _interpolate(p1, p2, frac):
-    """Linearly interpolate between two (lat, lng) points."""
-    return (p1[0] + (p2[0] - p1[0]) * frac, p1[1] + (p2[1] - p1[1]) * frac)
+def _interpolate(start, end, fraction):
+    return (
+        start[0] + (end[0] - start[0]) * fraction,
+        start[1] + (end[1] - start[1]) * fraction,
+    )
 
 
-def _route_length_m(coords):
-    """Total length of a polyline in metres."""
-    total = 0.0
-    for i in range(len(coords) - 1):
-        total += _haversine(
-            coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1]
-        )
-    return total
+def _coordinate_at_distance(coords, cumulative_distances, target_distance):
+    if target_distance <= 0:
+        return coords[0]
 
-
-def _is_loop(coords):
-    """True if start and end are close enough to treat as a loop."""
-    if len(coords) < 3:
-        return False
-    d = abs(coords[0][0] - coords[-1][0]) + abs(coords[0][1] - coords[-1][1])
-    return d < _LOOP_CLOSE_THRESHOLD
-
-
-def _build_route_for_distance(ref_coords, target_m):
-    """Build a route of *target_m* metres along *ref_coords*.
-
-    - If target_m <= reference route length, truncate.
-    - If target_m > reference route length:
-      - Loop route → continue around the route.
-      - Traverse route → ping-pong (out-and-back).
-    Returns a list of (lat, lng) tuples.
-    """
-    if len(ref_coords) < 2 or target_m <= 0:
-        return ref_coords[:1] if ref_coords else []
-
-    loop = _is_loop(ref_coords)
-    result = [ref_coords[0]]
-    accumulated = 0.0
-
-    # Build an iterator that yields successive points along the reference,
-    # repeating as needed (loop or ping-pong).
-    def _point_iter():
-        """Yield (lat, lng) points indefinitely along the reference route."""
-        forward = True
-        idx = 0
-        while True:
-            yield ref_coords[idx]
-            if forward:
-                idx += 1
-                if idx >= len(ref_coords):
-                    if loop:
-                        idx = 1  # skip duplicate start=end, wrap around
-                    else:
-                        forward = False
-                        idx = len(ref_coords) - 2
-            else:
-                idx -= 1
-                if idx < 0:
-                    forward = True
-                    idx = 1
-
-    it = _point_iter()
-    prev = next(it)  # first point (already in result)
-
-    for pt in it:
-        seg = _haversine(prev[0], prev[1], pt[0], pt[1])
-        if seg < 0.01:
-            prev = pt
+    for index in range(1, len(coords)):
+        if cumulative_distances[index] < target_distance:
             continue
-        if accumulated + seg >= target_m:
-            frac = (target_m - accumulated) / seg
-            result.append(_interpolate(prev, pt, frac))
-            break
-        accumulated += seg
-        result.append(pt)
-        prev = pt
-        # Safety: don't generate absurdly long polylines
-        if len(result) > 50_000:
-            break
 
-    return result
+        segment_start_distance = cumulative_distances[index - 1]
+        segment_distance = cumulative_distances[index] - segment_start_distance
+        if segment_distance <= 0:
+            continue
+
+        fraction = (target_distance - segment_start_distance) / segment_distance
+        return _interpolate(coords[index - 1], coords[index], fraction)
+
+    return coords[-1]
+
+
+def _trim_route_coordinates(coords, trim_m):
+    """Trim cumulative route length from the beginning and end only."""
+    if len(coords) < 2 or trim_m <= 0:
+        return list(coords)
+
+    cumulative_distances = [0.0]
+    for start, end in zip(coords, coords[1:], strict=False):
+        cumulative_distances.append(cumulative_distances[-1] + _haversine(*start, *end))
+
+    route_length_m = cumulative_distances[-1]
+    if route_length_m <= trim_m * 2:
+        return []
+
+    keep_start_m = trim_m
+    keep_end_m = route_length_m - trim_m
+    trimmed = [_coordinate_at_distance(coords, cumulative_distances, keep_start_m)]
+
+    for coordinate, distance_m in zip(
+        coords[1:-1], cumulative_distances[1:-1], strict=False
+    ):
+        if keep_start_m < distance_m < keep_end_m:
+            trimmed.append(coordinate)
+
+    trimmed.append(_coordinate_at_distance(coords, cumulative_distances, keep_end_m))
+
+    return [
+        coordinate
+        for index, coordinate in enumerate(trimmed)
+        if index == 0 or coordinate != trimmed[index - 1]
+    ]
+
+
+def trim_route_for_public(polyline_value, trim_m=IGNORE_START_END_RANGE):
+    """Hide route length from both ends without removing later loop sections."""
+    if not polyline_value or trim_m <= 0:
+        return polyline_value or ""
+
+    try:
+        coords = polyline_codec.decode(polyline_value)
+    except Exception:
+        logger.warning("Dropped an invalid activity polyline during public export")
+        return ""
+
+    trimmed = _trim_route_coordinates(coords, trim_m)
+    return polyline_codec.encode(trimmed) if len(trimmed) >= 2 else ""
+
+
+def public_location_for(location):
+    """Keep administrative location only; drop streets, POIs, and postcodes."""
+    if not location:
+        return ""
+
+    parts = [part.strip() for part in str(location).split(",") if part.strip()]
+    if not parts:
+        return ""
+
+    if "中国" in parts:
+        municipality = next(
+            (part for part in reversed(parts) if part in _CHINESE_MUNICIPALITIES),
+            "",
+        )
+        if municipality:
+            district = next(
+                (
+                    part
+                    for part in reversed(parts)
+                    if part != municipality
+                    and part.endswith(_CHINESE_DISTRICT_SUFFIXES)
+                ),
+                "",
+            )
+            return ", ".join(part for part in (district, municipality, "中国") if part)
+
+        province = next(
+            (
+                part
+                for part in reversed(parts)
+                if part.endswith(_CHINESE_PROVINCE_SUFFIXES)
+            ),
+            "",
+        )
+        city = next(
+            (
+                part
+                for part in reversed(parts)
+                if part != province and part.endswith(_CHINESE_CITY_SUFFIXES)
+            ),
+            "",
+        )
+        return ", ".join(part for part in (city, province, "中国") if part)
+
+    coarse_parts = [
+        part
+        for part in parts
+        if not any(character.isdigit() for character in part)
+        and "latitude" not in part.lower()
+        and "longitude" not in part.lower()
+    ]
+    return ", ".join(coarse_parts[-2:])
+
+
+def sanitize_activity_for_public(activity):
+    sanitized = dict(activity)
+    sanitized["location_country"] = public_location_for(
+        sanitized.get("location_country")
+    )
+    sanitized["summary_polyline"] = trim_route_for_public(
+        sanitized.get("summary_polyline")
+    )
+    return sanitized
 
 
 class Generator:
@@ -138,52 +223,100 @@ class Generator:
             client_secret=self.client_secret,
             refresh_token=self.refresh_token,
         )
-        # Update the authdata object
         self.access_token = response["access_token"]
         self.refresh_token = response["refresh_token"]
-
         self.client.access_token = response["access_token"]
         logger.info("Strava access token refreshed")
+        return self.refresh_token
 
-    def sync(self, force, refresh_locations=False):
-        """
-        Sync activities means sync from strava
-        TODO, better name later
-        """
-        self.check_access()
+    def _reconcile_activities(self, seen_activity_ids):
+        query = self.session.query(Activity)
+        if self.only_run:
+            query = query.filter(Activity.type == "Run")
+
+        stale_activities = [
+            activity
+            for activity in query
+            if int(activity.run_id) not in seen_activity_ids
+        ]
+        for activity in stale_activities:
+            self.session.delete(activity)
+
+        if stale_activities:
+            logger.info(
+                "Removed %s activities missing from the completed full sync",
+                len(stale_activities),
+            )
+
+    def _remove_legacy_synthetic_indoor_routes(self):
+        """Remove routes fabricated by the retired no-GPS indoor heuristic."""
+        legacy_activities = (
+            self.session.query(Activity).filter(Activity.subtype == "indoor").all()
+        )
+        for activity in legacy_activities:
+            activity.subtype = activity.type
+            activity.summary_polyline = ""
+
+        if legacy_activities:
+            self.session.commit()
+            logger.info(
+                "Removed %s legacy synthetic indoor routes",
+                len(legacy_activities),
+            )
+
+    def sync(self, force, refresh_locations=False, on_token_refreshed=None):
+        """Synchronize activities from Strava into the local cache."""
+        latest_refresh_token = self.check_access()
+        if on_token_refreshed:
+            on_token_refreshed(latest_refresh_token)
 
         logger.info("Start syncing Strava activities")
-        if force:
-            filters = {"before": datetime.datetime.now(datetime.UTC)}
-        else:
-            last_activity = self.session.query(func.max(Activity.start_date)).scalar()
-            if last_activity:
-                last_activity_date = arrow.get(last_activity)
-                last_activity_date = last_activity_date.shift(days=-7)
-                filters = {"after": last_activity_date.datetime}
-            else:
-                filters = {"before": datetime.datetime.now(datetime.UTC)}
+        seen_activity_ids = set()
 
-        for activity in self.client.get_activities(**filters):
-            if self.only_run and activity.type != "Run":
-                continue
-            #  strava use total_elevation_gain as elevation_gain
-            activity.elevation_gain = activity.total_elevation_gain
-            activity.subtype = activity.type
-            created = update_or_create_activity(
-                self.session,
-                activity,
-                refresh_locations=refresh_locations,
-            )
-            if created:
-                sys.stdout.write("+")
+        try:
+            if force:
+                filters = {"before": datetime.datetime.now(datetime.UTC)}
             else:
-                sys.stdout.write(".")
-            sys.stdout.flush()
-        self.session.commit()
+                last_activity = self.session.query(
+                    func.max(Activity.start_date)
+                ).scalar()
+                if last_activity:
+                    last_activity_date = arrow.get(last_activity).shift(days=-7)
+                    filters = {"after": last_activity_date.datetime}
+                else:
+                    filters = {"before": datetime.datetime.now(datetime.UTC)}
+
+            for activity in self.client.get_activities(**filters):
+                if self.only_run and activity.type != "Run":
+                    continue
+
+                activity_id = int(activity.id)
+                seen_activity_ids.add(activity_id)
+                activity.elevation_gain = getattr(
+                    activity, "total_elevation_gain", None
+                )
+                activity.subtype = activity.type
+                created = update_or_create_activity(
+                    self.session,
+                    activity,
+                    refresh_locations=refresh_locations,
+                )
+
+                sys.stdout.write("+" if created else ".")
+                sys.stdout.flush()
+
+            if force:
+                self._reconcile_activities(seen_activity_ids)
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+
+        return latest_refresh_token
 
     def load(self):
-        # if sub_type is not in the db, just add an empty string to it
+        self._remove_legacy_synthetic_indoor_routes()
+
         query = self.session.query(Activity).filter(Activity.distance > 0.1)
         if self.only_run:
             query = query.filter(Activity.type == "Run")
@@ -194,7 +327,6 @@ class Generator:
         streak = 0
         last_date = None
         for activity in activities:
-            # Determine running streak.
             date = datetime.datetime.strptime(
                 activity.start_date_local,
                 "%Y-%m-%d %H:%M:%S",  # type: ignore
@@ -210,107 +342,6 @@ class Generator:
                 streak = 1
             activity.streak = streak  # type: ignore
             last_date = date
-            activity_dict = activity.to_dict()
-            activity_list.append(activity_dict)
-
-        activity_list = self._fix_indoor_locations(activity_list)
-
-        # Persist indoor subtype and virtual polyline back to DB for future syncs.
-        for a in activity_list:
-            if a.get("subtype") == "indoor":
-                db_activity = self.session.get(Activity, a["run_id"])
-                if db_activity:
-                    if db_activity.subtype != "indoor":
-                        db_activity.subtype = "indoor"
-                    poly = a.get("summary_polyline", "")
-                    if poly and not db_activity.summary_polyline:
-                        db_activity.summary_polyline = poly
-        self.session.commit()
-
-        return activity_list
-
-    @staticmethod
-    def _fix_indoor_locations(activity_list):
-        """Replace indoor activity polylines with routes derived from the
-        nearest previous outdoor activity.
-
-        Indoor activities are identified by a multi-strategy approach:
-        1. Subtype match: known indoor Strava subtypes.
-        2. No GPS data: activity has distance but empty polyline
-        3. Tiny GPS spread: bounding box < ~10 m (noisy indoor GPS)
-        For each indoor activity we:
-        1. Take the most recent preceding outdoor route as reference.
-        2. Truncate or extend it to match the indoor run's distance.
-           - Loop routes (start ≈ end): continue around the route.
-           - Traverse routes: ping-pong (out-and-back).
-        """
-        if not activity_list:
-            return activity_list
-
-        INDOOR_SUBTYPES = {
-            "treadmill",
-            "indoor",  # generic indoor marker
-            "virtualrun",
-            "virtual_run",  # alternate form
-        }
-        # ~10 m in degrees (0.0001° ≈ 11 m)
-        TINY_SPREAD_THRESHOLD = 0.0001
-
-        # Classify each activity as indoor or outdoor and cache decoded coords
-        classified = []  # (dict, is_indoor, decoded_coords_or_None)
-        for a in activity_list:
-            subtype = (a.get("subtype") or "").lower()
-            is_indoor = subtype in INDOOR_SUBTYPES
-
-            poly = a.get("summary_polyline") or ""
-            coords = None
-            if poly:
-                try:
-                    coords = polyline_codec.decode(poly)
-                    if len(coords) < 2:
-                        coords = None
-                except Exception:
-                    coords = None
-
-            # Strategy 2: no GPS data but has distance → indoor
-            if not is_indoor and coords is None and a.get("distance", 0) > 100:
-                is_indoor = True
-
-            # Strategy 3: tiny GPS spread → noisy indoor GPS
-            if not is_indoor and coords and len(coords) >= 2:
-                lats = [c[0] for c in coords]
-                lngs = [c[1] for c in coords]
-                spread = max(max(lats) - min(lats), max(lngs) - min(lngs))
-                if spread < TINY_SPREAD_THRESHOLD:
-                    is_indoor = True
-
-            classified.append((a, is_indoor, coords))
-
-        # Replace indoor polylines using nearest previous outdoor route
-        last_outdoor_coords = None
-        last_outdoor_location = None
-        indoor_count = 0
-        for a, is_indoor, coords in classified:
-            if not is_indoor:
-                if coords is not None:
-                    last_outdoor_coords = coords
-                    last_outdoor_location = a.get("location_country")
-            else:
-                if last_outdoor_coords is not None:
-                    target_m = a.get("distance", 0)
-                    route = _build_route_for_distance(last_outdoor_coords, target_m)
-                    if len(route) >= 2:
-                        a["summary_polyline"] = polyline_codec.encode(route)
-                    if not a.get("location_country") and last_outdoor_location:
-                        a["location_country"] = last_outdoor_location
-                    # Normalize subtype to "indoor" for the frontend.
-                    a["subtype"] = "indoor"
-                    indoor_count += 1
-
-        if indoor_count > 0:
-            logger.info(
-                "Fixed %s indoor activities with route from nearest outdoor activity",
-                indoor_count,
-            )
+            activity_list.append(sanitize_activity_for_public(activity.to_dict()))
 
         return activity_list

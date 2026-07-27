@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,19 +18,34 @@ REQUIRED_FIELDS = {
     "month_key": str,
     "year_key": str,
     "average_speed": (int, float),
+    "average_heartrate": (int, float, type(None)),
+    "elevation_gain": (int, float, type(None)),
     "streak": int,
 }
 
 OPTIONAL_FIELDS = {
     "location_country": (str, type(None)),
     "summary_polyline": (str, type(None)),
-    "average_heartrate": (int, float, type(None)),
-    "elevation_gain": (int, float, type(None)),
 }
 
 
 def is_finite_number(value):
-    return isinstance(value, (int, float)) and math.isfinite(value)
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+    )
+
+
+def has_expected_type(value, expected_type):
+    expected_types = (
+        expected_type if isinstance(expected_type, tuple) else (expected_type,)
+    )
+    if isinstance(value, bool) and any(
+        expected_type in (int, float) for expected_type in expected_types
+    ):
+        return False
+    return isinstance(value, expected_type)
 
 
 def local_start_fields(start_date_local):
@@ -50,11 +66,11 @@ def validate_activity(activity, index):
     for field, expected_type in REQUIRED_FIELDS.items():
         if field not in activity:
             raise ValueError(f"activity[{index}] missing required field {field}")
-        if not isinstance(activity[field], expected_type):
+        if not has_expected_type(activity[field], expected_type):
             raise ValueError(f"activity[{index}].{field} has invalid type")
 
     for field, expected_type in OPTIONAL_FIELDS.items():
-        if field in activity and not isinstance(activity[field], expected_type):
+        if field in activity and not has_expected_type(activity[field], expected_type):
             raise ValueError(f"activity[{index}].{field} has invalid type")
 
     for field in (
@@ -81,6 +97,14 @@ def validate_activity(activity, index):
             raise ValueError(
                 f"activity[{index}].{field} does not match start_date_local"
             )
+
+    location = activity.get("location_country") or ""
+    if (
+        "latitude" in location.lower()
+        or "longitude" in location.lower()
+        or re.search(r"\b\d{5,6}\b", location)
+    ):
+        raise ValueError(f"activity[{index}].location_country is too precise")
 
 
 def main():

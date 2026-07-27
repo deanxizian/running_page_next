@@ -14,7 +14,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^7.1.6",
-    "react-router-dom": "^6.15.0"
+    "react-router-dom": "^6.30.4"
   },
   "license": "MIT",
   "private": true,
@@ -31,11 +31,12 @@
     "format:write": "prettier --write .",
     "python:check": "python3 -m ruff check run_page && python3 -m ruff format --check run_page",
     "python:format": "python3 -m ruff format run_page",
+    "python:test": "python3 -m unittest discover -s run_page -p 'test_*.py'",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
-    "check:ci": "pnpm check && pnpm python:check && pnpm test:e2e",
+    "check:ci": "pnpm check && pnpm python:check && pnpm python:test && pnpm test:e2e",
     "typecheck": "tsc --noEmit",
     "serve": "vite preview"
   },
@@ -61,12 +62,24 @@
     "prettier": "^3.8.3",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^7.1.2",
+    "vite": "^7.3.6",
     "vitest": "^4.1.5"
   },
   "pnpm": {
     "overrides": {
-      "rollup": "npm:@rollup/wasm-node@4.46.2"
+      "@babel/core": "7.29.7",
+      "brace-expansion@<5.0.8": "5.0.8",
+      "browserslist": "4.28.7",
+      "caniuse-lite": "1.0.30001806",
+      "js-yaml": "4.3.0",
+      "picomatch": "4.0.5",
+      "postcss": "8.5.23",
+      "protocol-buffers-schema": "3.6.1",
+      "rollup": "npm:@rollup/wasm-node@4.46.2",
+      "undici": "7.29.0"
+    },
+    "patchedDependencies": {
+      "minimatch@3.1.5": "patches/minimatch@3.1.5.patch"
     }
   }
 }

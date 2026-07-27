@@ -244,17 +244,22 @@ const monthlyBarsFor = (
   });
 };
 
-const chartYearsFor = (years: string[], monthlyChartYear: string) => {
+const chartYearsFor = (
+  years: string[],
+  monthlyChartYear: string,
+  latestSelectableYear: string
+) => {
   const currentMonthlyChartYearNumber = Number(monthlyChartYear);
+  const selectableYears = Array.from(new Set([...years, latestSelectableYear]))
+    .map(Number)
+    .filter((year) => Number.isInteger(year) && year > 0);
   const olderMonthlyChartYear =
-    years
-      .map(Number)
+    selectableYears
       .filter((year) => year < currentMonthlyChartYearNumber)
       .sort((a, b) => b - a)[0]
       ?.toString() ?? null;
   const newerMonthlyChartYear =
-    years
-      .map(Number)
+    selectableYears
       .filter((year) => year > currentMonthlyChartYearNumber)
       .sort((a, b) => a - b)[0]
       ?.toString() ?? null;

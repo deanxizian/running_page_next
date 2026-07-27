@@ -21,6 +21,8 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   REFRESH_LOCATIONS: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 16 1 * *') || (github.event_name == 'workflow_dispatch' && inputs.refresh_locations) }}
+  IGNORE_START_END_RANGE: ${{ vars.IGNORE_START_END_RANGE || '10' }}
+  NOMINATIM_USER_AGENT: ${{ vars.NOMINATIM_USER_AGENT || 'running_page_next' }}
 
 concurrency:
   group: strava-data-sync
@@ -57,6 +59,13 @@ jobs:
             strava-data-${{ runner.os }}-${{ github.ref_name }}-
             strava-data-${{ runner.os }}-
 
+      - name: Check refresh-token persistence access
+        env:
+          GH_TOKEN: ${{ secrets.STRAVA_TOKEN_ROTATION_PAT }}
+        run: |
+          test -n "$GH_TOKEN"
+          gh api "repos/$GITHUB_REPOSITORY/actions/secrets/public-key" >/dev/null
+
       - name: Sync running activities from Strava
         env:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
@@ -70,7 +79,24 @@ jobs:
           if [ "$REFRESH_LOCATIONS" = "true" ]; then
             sync_args+=(--force --refresh-locations)
           fi
+          sync_args+=(--refresh-token-output "$RUNNER_TEMP/strava_refresh_token")
           python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" "${sync_args[@]}"
+
+      - name: Persist rotated Strava refresh token
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.STRAVA_TOKEN_ROTATION_PAT }}
+          PREVIOUS_REFRESH_TOKEN: ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
+        run: |
+          if [ ! -s "$RUNNER_TEMP/strava_refresh_token" ]; then
+            exit 0
+          fi
+          latest_refresh_token="$(<"$RUNNER_TEMP/strava_refresh_token")"
+          if [ "$latest_refresh_token" != "$PREVIOUS_REFRESH_TOKEN" ]; then
+            printf '%s' "$latest_refresh_token" |
+              gh secret set STRAVA_CLIENT_REFRESH_TOKEN \
+                --repo "$GITHUB_REPOSITORY"
+          fi
 
       - name: Validate generated activities
         run: python run_page/validate_activities.py src/static/activities.json

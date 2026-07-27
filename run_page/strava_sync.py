@@ -1,11 +1,26 @@
 import argparse
 import json
 import logging
+import os
+from pathlib import Path
 
 from config import JSON_FILE, SQL_FILE
 from generator import Generator
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+
+
+def write_private_text(path: str, value: str):
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    file_descriptor = os.open(
+        output_path,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+        0o600,
+    )
+    os.fchmod(file_descriptor, 0o600)
+    with os.fdopen(file_descriptor, "w") as output_file:
+        output_file.write(value)
 
 
 def run_strava_sync(
@@ -16,6 +31,7 @@ def run_strava_sync(
     only_run: bool = False,
     force: bool = False,
     refresh_locations: bool = False,
+    refresh_token_output: str | None = None,
 ):
     sync_types = sync_types or []
     generator = Generator(SQL_FILE)
@@ -25,11 +41,23 @@ def run_strava_sync(
         only_run = True
     # if you want to refresh data change False to True
     generator.only_run = only_run
-    generator.sync(force, refresh_locations=refresh_locations)
+    latest_refresh_token = generator.sync(
+        force,
+        refresh_locations=refresh_locations,
+        on_token_refreshed=(
+            lambda token: (
+                write_private_text(refresh_token_output, token)
+                if refresh_token_output
+                else None
+            )
+        ),
+    )
 
     activities_list = generator.load()
     with open(JSON_FILE, "w") as f:
         json.dump(activities_list, f)
+
+    return latest_refresh_token
 
 
 if __name__ == "__main__":
@@ -55,6 +83,10 @@ if __name__ == "__main__":
         action="store_true",
         help="refresh location_country for existing activities",
     )
+    parser.add_argument(
+        "--refresh-token-output",
+        help="write the rotated refresh token to a permission-restricted file",
+    )
     options = parser.parse_args()
     run_strava_sync(
         options.client_id,
@@ -63,4 +95,5 @@ if __name__ == "__main__":
         only_run=options.only_run,
         force=options.force,
         refresh_locations=options.refresh_locations,
+        refresh_token_output=options.refresh_token_output,
     )

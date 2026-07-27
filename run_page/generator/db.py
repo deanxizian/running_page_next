@@ -1,10 +1,9 @@
 import datetime
 import logging
-import random
-import string
+import os
 import time
 
-from geopy.geocoders import Nominatim, options
+from geopy.geocoders import Nominatim
 from sqlalchemy import (
     Column,
     Float,
@@ -24,15 +23,9 @@ class Base(DeclarativeBase):
     pass
 
 
-# random user name 8 letters
-def randomword():
-    letters = string.ascii_lowercase
-    return "".join(random.choice(letters) for i in range(4))
-
-
-options.default_user_agent = "running_page"
-# reverse the location (lat, lon) -> location detail
-g = Nominatim(user_agent=randomword())
+NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "running_page_next")
+g = Nominatim(user_agent=NOMINATIM_USER_AGENT)
+_geocode_cache = {}
 
 
 ACTIVITY_KEYS = [
@@ -120,16 +113,21 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
     if not should_reverse_geocode:
         return location_country
 
+    cache_key = (round(start_point.lat, 4), round(start_point.lon, 4))
+    if cache_key in _geocode_cache:
+        return _geocode_cache[cache_key]
+
     for attempt in range(2):
         try:
             time.sleep(1)
-            return str(
-                g.reverse(
-                    f"{start_point.lat}, {start_point.lon}",
-                    language="zh-CN",
-                    timeout=15,
-                )
+            result = g.reverse(
+                f"{start_point.lat}, {start_point.lon}",
+                language="zh-CN",
+                timeout=15,
             )
+            resolved_location = str(result) if result else location_country
+            _geocode_cache[cache_key] = resolved_location
+            return resolved_location
         except Exception as exc:
             logger.warning(
                 "Reverse geocode failed for %s,%s on attempt %s: %s",
@@ -144,75 +142,68 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
 
 def update_or_create_activity(session, run_activity, refresh_locations=False):
     created = False
-    try:
-        activity = (
-            session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
-        )
+    activity = session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
 
-        current_elevation_gain = 0.0  # default value
+    current_elevation_gain = 0.0
+    if (
+        hasattr(run_activity, "total_elevation_gain")
+        and run_activity.total_elevation_gain is not None
+    ):
+        current_elevation_gain = float(run_activity.total_elevation_gain)
+    elif (
+        hasattr(run_activity, "elevation_gain")
+        and run_activity.elevation_gain is not None
+    ):
+        current_elevation_gain = float(run_activity.elevation_gain)
 
-        # https://github.com/stravalib/stravalib/blob/main/src/stravalib/strava_model.py#L639C1-L643C41
-        if (
-            hasattr(run_activity, "total_elevation_gain")
-            and run_activity.total_elevation_gain is not None
-        ):
-            current_elevation_gain = float(run_activity.total_elevation_gain)
-        elif (
-            hasattr(run_activity, "elevation_gain")
-            and run_activity.elevation_gain is not None
-        ):
-            current_elevation_gain = float(run_activity.elevation_gain)
+    if not activity:
+        location_country = resolve_location_country(run_activity)
 
-        if not activity:
-            location_country = resolve_location_country(run_activity)
-
-            activity = Activity(
-                run_id=run_activity.id,
-                name=run_activity.name,
-                distance=run_activity.distance,
-                moving_time=run_activity.moving_time,
-                elapsed_time=run_activity.elapsed_time,
-                type=run_activity.type,
-                subtype=run_activity.subtype,
-                start_date=run_activity.start_date,
-                start_date_local=run_activity.start_date_local,
-                location_country=location_country,
-                average_heartrate=run_activity.average_heartrate,
-                average_speed=float(run_activity.average_speed),
-                elevation_gain=current_elevation_gain,
-                summary_polyline=(
-                    run_activity.map and run_activity.map.summary_polyline or ""
-                ),
-            )
-            session.add(activity)
-            created = True
-        else:
-            current_location = activity.location_country
-            if refresh_locations or not current_location or current_location == "China":
-                location_country = resolve_location_country(
-                    run_activity,
-                    current_location,
-                    prefer_current=not refresh_locations,
-                )
-            else:
-                location_country = current_location
-            activity.name = run_activity.name
-            activity.distance = float(run_activity.distance)
-            activity.moving_time = run_activity.moving_time
-            activity.elapsed_time = run_activity.elapsed_time
-            activity.type = run_activity.type
-            activity.subtype = run_activity.subtype
-            activity.start_date = run_activity.start_date
-            activity.start_date_local = run_activity.start_date_local
-            activity.location_country = location_country
-            activity.average_heartrate = run_activity.average_heartrate
-            activity.average_speed = float(run_activity.average_speed)
-            activity.elevation_gain = current_elevation_gain
-            activity.summary_polyline = (
+        activity = Activity(
+            run_id=run_activity.id,
+            name=run_activity.name,
+            distance=run_activity.distance,
+            moving_time=run_activity.moving_time,
+            elapsed_time=run_activity.elapsed_time,
+            type=run_activity.type,
+            subtype=run_activity.subtype,
+            start_date=run_activity.start_date,
+            start_date_local=run_activity.start_date_local,
+            location_country=location_country,
+            average_heartrate=run_activity.average_heartrate,
+            average_speed=float(run_activity.average_speed),
+            elevation_gain=current_elevation_gain,
+            summary_polyline=(
                 run_activity.map and run_activity.map.summary_polyline or ""
+            ),
+        )
+        session.add(activity)
+        created = True
+    else:
+        current_location = activity.location_country
+        if refresh_locations or not current_location or current_location == "China":
+            location_country = resolve_location_country(
+                run_activity,
+                current_location,
+                prefer_current=not refresh_locations,
             )
-    except Exception:
-        logger.exception("Failed to sync activity %s", run_activity.id)
+        else:
+            location_country = current_location
+        activity.name = run_activity.name
+        activity.distance = float(run_activity.distance)
+        activity.moving_time = run_activity.moving_time
+        activity.elapsed_time = run_activity.elapsed_time
+        activity.type = run_activity.type
+        activity.subtype = run_activity.subtype
+        activity.start_date = run_activity.start_date
+        activity.start_date_local = run_activity.start_date_local
+        activity.location_country = location_country
+        activity.average_heartrate = run_activity.average_heartrate
+        activity.average_speed = float(run_activity.average_speed)
+        activity.elevation_gain = current_elevation_gain
+        activity.summary_polyline = (
+            run_activity.map and run_activity.map.summary_polyline or ""
+        )
 
     return created
 

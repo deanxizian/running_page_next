@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Activity } from '@/entities/activity/model/types';
 import { localStartFieldsFor } from '@/entities/activity/model/schema';
 import { groupActivities } from '@/entities/activity/lib/group';
-import { currentPeriodRunsFor, metricsFor } from './selectors';
+import { chartYearsFor, currentPeriodRunsFor, metricsFor } from './selectors';
 
 const activity = (
   runId: number,
@@ -61,5 +61,19 @@ describe('home selectors', () => {
     expect(metrics.lastYearSamePeriodDistance).toBe(320);
     expect(metrics.monthDistance).toBe(320);
     expect(metrics.lastMonthSamePeriodDistance).toBe(110);
+  });
+
+  it('keeps an empty current year reachable from an older chart year', () => {
+    expect(chartYearsFor(['2025', '2024'], '2025', '2026')).toEqual({
+      olderMonthlyChartYear: '2024',
+      newerMonthlyChartYear: '2026',
+    });
+  });
+
+  it('ignores empty year values when no activities exist', () => {
+    expect(chartYearsFor([], '', '')).toEqual({
+      olderMonthlyChartYear: null,
+      newerMonthlyChartYear: null,
+    });
   });
 });

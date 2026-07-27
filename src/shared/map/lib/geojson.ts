@@ -4,9 +4,8 @@ import type { RPGeometry } from '@/static/run_countries';
 const shouldLoadLocalizedMapData = (
   isBigMap: boolean,
   isChineseLocale: boolean,
-  hasLoadedMapData: boolean,
-  isLoadingMapData: boolean
-) => isBigMap && isChineseLocale && !hasLoadedMapData && !isLoadingMapData;
+  hasLoadedMapData: boolean
+) => isBigMap && isChineseLocale && !hasLoadedMapData;
 
 const combinedMapGeoDataFor = (
   geoData: FeatureCollection<RPGeometry>,

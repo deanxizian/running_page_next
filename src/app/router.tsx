@@ -1,20 +1,46 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
-import DashboardLayout from '@/app/DashboardLayout';
-import EventsPage from '@/features/events/EventsPage';
-import HeatmapPage from '@/features/heatmap/HeatmapPage';
-import HomePage from '@/features/home/HomePage';
-import NotFoundPage from '@/pages/404';
 
 export const router = createBrowserRouter(
   [
     {
-      element: <DashboardLayout />,
+      lazy: async () => {
+        const { default: DashboardLayout } =
+          await import('@/app/DashboardLayout');
+        return { Component: DashboardLayout };
+      },
       children: [
-        { index: true, element: <HomePage /> },
-        { path: 'heatmap', element: <HeatmapPage /> },
-        { path: 'events', element: <EventsPage /> },
+        {
+          index: true,
+          lazy: async () => {
+            const { default: HomePage } =
+              await import('@/features/home/HomePage');
+            return { Component: HomePage };
+          },
+        },
+        {
+          path: 'heatmap',
+          lazy: async () => {
+            const { default: HeatmapPage } =
+              await import('@/features/heatmap/HeatmapPage');
+            return { Component: HeatmapPage };
+          },
+        },
+        {
+          path: 'events',
+          lazy: async () => {
+            const { default: EventsPage } =
+              await import('@/features/events/EventsPage');
+            return { Component: EventsPage };
+          },
+        },
         { path: 'mls', element: <Navigate to="/events" replace /> },
-        { path: '*', element: <NotFoundPage /> },
+        {
+          path: '*',
+          lazy: async () => {
+            const { default: NotFoundPage } = await import('@/pages/404');
+            return { Component: NotFoundPage };
+          },
+        },
       ],
     },
   ],
