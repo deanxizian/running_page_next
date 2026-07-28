@@ -4,7 +4,6 @@ import ReactMap, { Layer, Source } from '@vis.gl/react-maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { IViewState } from '@/entities/activity/model/types';
-import { IS_CHINESE } from '@/shared/config/i18n';
 import { getMapcnStyle } from '@/shared/config/map';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
@@ -50,7 +49,6 @@ const RunMap = ({
   const combinedGeoData = useMapGeoData({
     geoData,
     isBigMap,
-    isChineseLocale: IS_CHINESE,
   });
   const {
     clearStyleRefresh,

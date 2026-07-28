@@ -229,7 +229,9 @@
   border: 1px solid #27272a;
   border-radius: 24px;
   background: #18181b;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 52px -12px rgba(227, 25, 55, 0.32);
   cursor: default;
 }
 
@@ -252,35 +254,46 @@
   font-family: var(--font-mono);
 }
 
-.eventModalStats {
-  display: flex;
-  flex-wrap: wrap;
+.eventModalMetrics {
+  margin: 2px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 2px;
 }
 
-.eventModalStat {
-  border: 1px solid #27272a;
-  border-radius: 999px;
-  padding: 7px 11px;
-  background: rgba(255, 255, 255, 0.025);
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  line-height: 1;
+.eventModalMetric {
+  min-width: 0;
+  border: 1px solid rgba(227, 25, 55, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: linear-gradient(
+    145deg,
+    rgba(227, 25, 55, 0.065),
+    rgba(255, 255, 255, 0.025) 72%
+  );
+}
+
+.eventModalMetric dt,
+.eventModalMetric dd {
+  margin: 0;
+}
+
+.eventModalMetric dt {
+  color: #71717a;
+  font-size: 11px;
+}
+
+.eventModalMetric dd {
+  margin-top: 5px;
+  color: #d4d4d8;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.eventModalStatLabel {
-  color: #71717a;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.eventModalStatValue {
-  color: #d4d4d8;
-  font-size: 12px;
-  font-weight: 500;
+.eventModalMetricPrimary dd {
+  font-weight: 700;
 }
 
 .eventModal {

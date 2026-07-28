@@ -67,12 +67,6 @@ distance also matches a half marathon (20–23 km) or full marathon (40–45 km)
 
 ## Environment
 
-Frontend:
-
-```text
-VITE_APP_LOCALE          optional, defaults to zh-CN
-```
-
 Maps use the token-free MapCN stack: MapLibre GL with the CARTO dark-matter
 basemap. There is no alternate Mapbox provider or frontend map token.
 

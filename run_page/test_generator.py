@@ -20,7 +20,7 @@ from generator.db import Activity
 from strava_sync import write_private_text
 
 
-def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
+def strava_activity(run_id, *, average_speed=2.8, average_temp=18, workout_type=None):
     return SimpleNamespace(
         id=run_id,
         name=f"Run {run_id}",
@@ -33,6 +33,7 @@ def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
         start_date_local="2026-07-20 08:00:00",
         location_country="France",
         start_latlng=None,
+        average_temp=average_temp,
         average_heartrate=150,
         average_speed=average_speed,
         total_elevation_gain=30,
@@ -53,6 +54,7 @@ def cached_activity(run_id, activity_type="Run", summary_polyline=""):
         start_date=f"2026-07-{run_id:02d} 00:00:00",
         start_date_local=f"2026-07-{run_id:02d} 08:00:00",
         location_country="France",
+        average_temp=None,
         average_heartrate=None,
         average_speed=2.8,
         elevation_gain=10,
@@ -188,6 +190,7 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(persisted_tokens, ["rotated"])
             self.assertEqual(remaining_ids, {2, 3, 4})
             self.assertEqual(generator.session.get(Activity, 4).average_heartrate, 150)
+            self.assertEqual(generator.session.get(Activity, 4).average_temp, 18)
             self.assertEqual(generator.session.get(Activity, 4).workout_type, 1)
             exported_race = next(
                 activity for activity in generator.load() if activity["run_id"] == 4
@@ -214,7 +217,7 @@ class SyncTests(unittest.TestCase):
             }
             self.assertEqual(remaining_ids, {1, 2})
 
-    def test_existing_cache_gets_workout_type_column(self):
+    def test_existing_cache_gets_new_activity_columns(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             db_path = os.path.join(temporary_directory, "data.db")
             with sqlite3.connect(db_path) as connection:
@@ -231,6 +234,7 @@ class SyncTests(unittest.TestCase):
 
             generator.session.close()
             self.assertIn("workout_type", columns)
+            self.assertIn("average_temp", columns)
 
     def test_sync_failure_rolls_back_updates_and_skips_reconciliation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

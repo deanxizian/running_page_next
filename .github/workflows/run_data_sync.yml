@@ -9,10 +9,12 @@ on:
         default: false
         type: boolean
   schedule:
-    # Normal daily sync at 00:00 Asia-Shanghai / 16:00 UTC.
-    - cron: '0 16 2-31 * *'
+    # Normal daily sync at 00:00 Asia/Shanghai.
+    - cron: '0 0 2-31 * *'
+      timezone: 'Asia/Shanghai'
     # Monthly sync with existing-location refresh on the 1st.
-    - cron: '0 16 1 * *'
+    - cron: '0 0 1 * *'
+      timezone: 'Asia/Shanghai'
 
 permissions:
   contents: write
@@ -20,7 +22,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  REFRESH_LOCATIONS: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 16 1 * *') || (github.event_name == 'workflow_dispatch' && inputs.refresh_locations) }}
+  REFRESH_LOCATIONS: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 0 1 * *') || (github.event_name == 'workflow_dispatch' && inputs.refresh_locations) }}
   IGNORE_START_END_RANGE: ${{ vars.IGNORE_START_END_RANGE || '10' }}
   NOMINATIM_USER_AGENT: ${{ vars.NOMINATIM_USER_AGENT || 'running_page_next' }}
 

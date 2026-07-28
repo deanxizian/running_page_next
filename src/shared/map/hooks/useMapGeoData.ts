@@ -2,52 +2,37 @@ import { useEffect, useMemo, useState } from 'react';
 import { geoJsonForMap } from '@/entities/activity/lib/route';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
-import {
-  combinedMapGeoDataFor,
-  shouldLoadLocalizedMapData,
-} from '../lib/geojson';
+import { combinedMapGeoDataFor, shouldLoadMapData } from '../lib/geojson';
 
 type UseMapGeoDataParams = {
   geoData: FeatureCollection<RPGeometry>;
   isBigMap: boolean;
-  isChineseLocale: boolean;
 };
 
-let localizedMapDataPromise: Promise<FeatureCollection<RPGeometry>> | null =
-  null;
+let mapDataPromise: Promise<FeatureCollection<RPGeometry>> | null = null;
 
-const loadLocalizedMapData = () => {
-  if (!localizedMapDataPromise) {
-    localizedMapDataPromise = geoJsonForMap().catch((error: unknown) => {
-      localizedMapDataPromise = null;
+const loadMapData = () => {
+  if (!mapDataPromise) {
+    mapDataPromise = geoJsonForMap().catch((error: unknown) => {
+      mapDataPromise = null;
       throw error;
     });
   }
 
-  return localizedMapDataPromise;
+  return mapDataPromise;
 };
 
-const useMapGeoData = ({
-  geoData,
-  isBigMap,
-  isChineseLocale,
-}: UseMapGeoDataParams) => {
+const useMapGeoData = ({ geoData, isBigMap }: UseMapGeoDataParams) => {
   const [mapGeoData, setMapGeoData] =
     useState<FeatureCollection<RPGeometry> | null>(null);
 
   useEffect(() => {
-    if (
-      !shouldLoadLocalizedMapData(
-        isBigMap,
-        isChineseLocale,
-        Boolean(mapGeoData)
-      )
-    ) {
+    if (!shouldLoadMapData(isBigMap, Boolean(mapGeoData))) {
       return;
     }
 
     let cancelled = false;
-    loadLocalizedMapData()
+    loadMapData()
       .then((data) => {
         if (!cancelled) {
           setMapGeoData(data);
@@ -58,11 +43,11 @@ const useMapGeoData = ({
     return () => {
       cancelled = true;
     };
-  }, [isBigMap, isChineseLocale, mapGeoData]);
+  }, [isBigMap, mapGeoData]);
 
   return useMemo(
-    () => combinedMapGeoDataFor(geoData, mapGeoData, isBigMap, isChineseLocale),
-    [geoData, isBigMap, isChineseLocale, mapGeoData]
+    () => combinedMapGeoDataFor(geoData, mapGeoData, isBigMap),
+    [geoData, isBigMap, mapGeoData]
   );
 };
 

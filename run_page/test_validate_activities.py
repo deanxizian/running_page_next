@@ -18,6 +18,7 @@ def valid_activity():
         "month_key": "2026-07",
         "year_key": "2026",
         "average_speed": 2.8,
+        "average_temp": 18,
         "average_heartrate": None,
         "elevation_gain": 30,
         "streak": 1,
@@ -45,6 +46,7 @@ class ValidateActivityTests(unittest.TestCase):
             "run_id",
             "distance",
             "average_speed",
+            "average_temp",
             "average_heartrate",
             "elevation_gain",
             "streak",
@@ -59,6 +61,12 @@ class ValidateActivityTests(unittest.TestCase):
     def test_accepts_legacy_activity_without_workout_type(self):
         activity = valid_activity()
         del activity["workout_type"]
+
+        validate_activity(activity, 0)
+
+    def test_accepts_legacy_activity_without_average_temp(self):
+        activity = valid_activity()
+        del activity["average_temp"]
 
         validate_activity(activity, 0)
 

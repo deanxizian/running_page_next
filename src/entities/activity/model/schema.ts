@@ -26,6 +26,9 @@ const isNumber = (value: unknown) =>
 
 const isNullableNumber = (value: unknown) => value === null || isNumber(value);
 
+const isOptionalNullableNumber = (value: unknown) =>
+  value === undefined || isNullableNumber(value);
+
 const isOptionalNullableInteger = (value: unknown) =>
   value === undefined ||
   value === null ||
@@ -107,6 +110,7 @@ const isActivity = (value: unknown): value is Activity => {
     hasConsistentLocalStartFields(value) &&
     isNullableString(value.location_country) &&
     isNullableString(value.summary_polyline) &&
+    isOptionalNullableNumber(value.average_temp) &&
     isNullableNumber(value.average_heartrate) &&
     isNullableNumber(value.elevation_gain) &&
     isNumber(value.average_speed) &&

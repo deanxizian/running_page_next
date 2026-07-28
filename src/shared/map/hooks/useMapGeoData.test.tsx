@@ -22,13 +22,12 @@ describe('useMapGeoData', () => {
     geoJsonForMap.mockClear();
   });
 
-  it('does not retry continuously after localized map data fails to load', async () => {
+  it('does not retry continuously after map data fails to load', async () => {
     const { rerender } = renderHook(
       ({ geoData }) =>
         useMapGeoData({
           geoData,
           isBigMap: true,
-          isChineseLocale: true,
         }),
       { initialProps: { geoData: emptyGeoData } }
     );

@@ -43,8 +43,13 @@ test.describe('app smoke', () => {
     await expect(firstEvent).toBeVisible();
     await firstEvent.click();
 
-    await expect(page.getByRole('dialog')).toBeVisible();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('dt')).toHaveCount(6);
+    await expect(dialog.getByText('Temperature:')).toBeVisible();
+    await expect(dialog.getByText('Elevation:')).toBeVisible();
+    await expect(dialog.getByText('Avg. HR:')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(dialog).toBeHidden();
   });
 });

@@ -2,19 +2,15 @@ import type { FilterSpecification } from 'maplibre-gl';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
 
-const shouldLoadLocalizedMapData = (
-  isBigMap: boolean,
-  isChineseLocale: boolean,
-  hasLoadedMapData: boolean
-) => isBigMap && isChineseLocale && !hasLoadedMapData;
+const shouldLoadMapData = (isBigMap: boolean, hasLoadedMapData: boolean) =>
+  isBigMap && !hasLoadedMapData;
 
 const combinedMapGeoDataFor = (
   geoData: FeatureCollection<RPGeometry>,
   mapGeoData: FeatureCollection<RPGeometry> | null,
-  isBigMap: boolean,
-  isChineseLocale: boolean
+  isBigMap: boolean
 ): FeatureCollection<RPGeometry> => {
-  if (isBigMap && isChineseLocale && mapGeoData) {
+  if (isBigMap && mapGeoData) {
     return {
       type: 'FeatureCollection',
       features: geoData.features.concat(mapGeoData.features),
@@ -35,5 +31,5 @@ export {
   combinedMapGeoDataFor,
   filterExpressionFor,
   isSingleRunGeoData,
-  shouldLoadLocalizedMapData,
+  shouldLoadMapData,
 };

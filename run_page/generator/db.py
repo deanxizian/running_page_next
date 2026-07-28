@@ -40,6 +40,7 @@ ACTIVITY_KEYS = [
     "start_date_local",
     "location_country",
     "summary_polyline",
+    "average_temp",
     "average_heartrate",
     "average_speed",
     "elevation_gain",
@@ -74,6 +75,7 @@ class Activity(Base):
     start_date_local = Column(String)
     location_country = Column(String)
     summary_polyline = Column(String)
+    average_temp = Column(Float)
     average_heartrate = Column(Float)
     average_speed = Column(Float)
     elevation_gain = Column(Float)
@@ -146,6 +148,7 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
     created = False
     activity = session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
     workout_type = getattr(run_activity, "workout_type", None)
+    average_temp = getattr(run_activity, "average_temp", None)
 
     current_elevation_gain = 0.0
     if (
@@ -174,6 +177,7 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
             start_date=run_activity.start_date,
             start_date_local=run_activity.start_date_local,
             location_country=location_country,
+            average_temp=average_temp,
             average_heartrate=run_activity.average_heartrate,
             average_speed=float(run_activity.average_speed),
             elevation_gain=current_elevation_gain,
@@ -203,6 +207,7 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
         activity.start_date = run_activity.start_date
         activity.start_date_local = run_activity.start_date_local
         activity.location_country = location_country
+        activity.average_temp = average_temp
         activity.average_heartrate = run_activity.average_heartrate
         activity.average_speed = float(run_activity.average_speed)
         activity.elevation_gain = current_elevation_gain
