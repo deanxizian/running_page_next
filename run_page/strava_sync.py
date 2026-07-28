@@ -53,6 +53,7 @@ def run_strava_sync(
         ),
     )
 
+    generator.enrich_race_weather()
     activities_list = generator.load()
     with open(JSON_FILE, "w") as f:
         json.dump(activities_list, f)

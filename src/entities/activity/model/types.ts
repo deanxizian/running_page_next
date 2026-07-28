@@ -19,7 +19,7 @@ export interface Activity {
   year_key: string;
   location_country?: string | null;
   summary_polyline?: string | null;
-  average_temp?: number | null;
+  weather_temperature?: number | null;
   average_heartrate?: number | null;
   elevation_gain: number | null;
   average_speed: number;

@@ -7,6 +7,8 @@ import sys
 import arrow
 import polyline as polyline_codec
 import stravalib
+from activity_rules import is_race_event
+from race_weather import temperature_for_activity
 from sqlalchemy import func
 
 from .db import Activity, init_db, update_or_create_activity
@@ -247,6 +249,36 @@ class Generator:
                 "Removed %s activities missing from the completed full sync",
                 len(stale_activities),
             )
+
+    def enrich_race_weather(self):
+        """Cache Open-Meteo temperatures for races that do not have one yet."""
+        updated_count = 0
+        cleared_count = 0
+
+        for activity in self.session.query(Activity):
+            if not is_race_event(activity):
+                if activity.weather_temperature is not None:
+                    activity.weather_temperature = None
+                    cleared_count += 1
+                continue
+
+            if activity.weather_temperature is not None:
+                continue
+
+            temperature = temperature_for_activity(activity)
+            if temperature is None:
+                continue
+
+            activity.weather_temperature = temperature
+            updated_count += 1
+
+        self.session.commit()
+        logger.info(
+            "Race weather cache: %s added, %s non-race values removed",
+            updated_count,
+            cleared_count,
+        )
+        return updated_count
 
     def sync(self, force, refresh_locations=False, on_token_refreshed=None):
         """Synchronize activities from Strava into the local cache."""

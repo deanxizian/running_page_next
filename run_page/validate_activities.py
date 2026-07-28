@@ -5,6 +5,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from activity_rules import is_race_event
+
 REQUIRED_FIELDS = {
     "run_id": int,
     "name": str,
@@ -27,7 +29,7 @@ OPTIONAL_FIELDS = {
     "location_country": (str, type(None)),
     "summary_polyline": (str, type(None)),
     "workout_type": (int, type(None)),
-    "average_temp": (int, float, type(None)),
+    "weather_temperature": (int, float, type(None)),
 }
 
 
@@ -78,7 +80,7 @@ def validate_activity(activity, index):
     for field in (
         "distance",
         "average_speed",
-        "average_temp",
+        "weather_temperature",
         "average_heartrate",
         "elevation_gain",
         "start_time_local_ms",
@@ -89,6 +91,11 @@ def validate_activity(activity, index):
             and not is_finite_number(activity[field])
         ):
             raise ValueError(f"activity[{index}].{field} must be finite")
+
+    if activity.get("weather_temperature") is not None and not is_race_event(activity):
+        raise ValueError(
+            f"activity[{index}].weather_temperature is only allowed for races"
+        )
 
     try:
         expected_dates = local_start_fields(activity["start_date_local"])

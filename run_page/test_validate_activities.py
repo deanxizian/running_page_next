@@ -18,12 +18,12 @@ def valid_activity():
         "month_key": "2026-07",
         "year_key": "2026",
         "average_speed": 2.8,
-        "average_temp": 18,
         "average_heartrate": None,
         "elevation_gain": 30,
         "streak": 1,
         "location_country": "上海市, 中国",
         "summary_polyline": "",
+        "weather_temperature": 20.5,
     }
 
 
@@ -46,11 +46,11 @@ class ValidateActivityTests(unittest.TestCase):
             "run_id",
             "distance",
             "average_speed",
-            "average_temp",
             "average_heartrate",
             "elevation_gain",
             "streak",
             "workout_type",
+            "weather_temperature",
         ):
             with self.subTest(field=field):
                 activity = valid_activity()
@@ -58,15 +58,23 @@ class ValidateActivityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "invalid type|must be finite"):
                     validate_activity(activity, 0)
 
+    def test_weather_temperature_is_limited_to_races(self):
+        activity = valid_activity()
+        activity["workout_type"] = None
+
+        with self.assertRaisesRegex(
+            ValueError, "weather_temperature is only allowed for races"
+        ):
+            validate_activity(activity, 0)
+
+        activity["name"] = "上海半程马拉松"
+        activity["distance"] = 21_100
+        validate_activity(activity, 0)
+
     def test_accepts_legacy_activity_without_workout_type(self):
         activity = valid_activity()
         del activity["workout_type"]
-
-        validate_activity(activity, 0)
-
-    def test_accepts_legacy_activity_without_average_temp(self):
-        activity = valid_activity()
-        del activity["average_temp"]
+        del activity["weather_temperature"]
 
         validate_activity(activity, 0)
 

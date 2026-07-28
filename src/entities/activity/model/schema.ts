@@ -110,7 +110,7 @@ const isActivity = (value: unknown): value is Activity => {
     hasConsistentLocalStartFields(value) &&
     isNullableString(value.location_country) &&
     isNullableString(value.summary_polyline) &&
-    isOptionalNullableNumber(value.average_temp) &&
+    isOptionalNullableNumber(value.weather_temperature) &&
     isNullableNumber(value.average_heartrate) &&
     isNullableNumber(value.elevation_gain) &&
     isNumber(value.average_speed) &&

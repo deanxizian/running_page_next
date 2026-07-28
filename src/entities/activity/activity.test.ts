@@ -37,7 +37,6 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
     ...dateFields,
     location_country: '',
     summary_polyline: '',
-    average_temp: null,
     average_heartrate: null,
     elevation_gain: 0,
     average_speed: 2.777,
@@ -117,7 +116,7 @@ describe('activity grouping and snapshot', () => {
       'Invalid activity record at index 0.'
     );
     expect(() =>
-      parseActivities([activity({ average_temp: Number.NaN })])
+      parseActivities([activity({ weather_temperature: Number.NaN })])
     ).toThrow('Invalid activity record at index 0.');
   });
 

@@ -20,7 +20,7 @@ from generator.db import Activity
 from strava_sync import write_private_text
 
 
-def strava_activity(run_id, *, average_speed=2.8, average_temp=18, workout_type=None):
+def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
     return SimpleNamespace(
         id=run_id,
         name=f"Run {run_id}",
@@ -33,7 +33,6 @@ def strava_activity(run_id, *, average_speed=2.8, average_temp=18, workout_type=
         start_date_local="2026-07-20 08:00:00",
         location_country="France",
         start_latlng=None,
-        average_temp=average_temp,
         average_heartrate=150,
         average_speed=average_speed,
         total_elevation_gain=30,
@@ -54,7 +53,6 @@ def cached_activity(run_id, activity_type="Run", summary_polyline=""):
         start_date=f"2026-07-{run_id:02d} 00:00:00",
         start_date_local=f"2026-07-{run_id:02d} 08:00:00",
         location_country="France",
-        average_temp=None,
         average_heartrate=None,
         average_speed=2.8,
         elevation_gain=10,
@@ -190,7 +188,6 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(persisted_tokens, ["rotated"])
             self.assertEqual(remaining_ids, {2, 3, 4})
             self.assertEqual(generator.session.get(Activity, 4).average_heartrate, 150)
-            self.assertEqual(generator.session.get(Activity, 4).average_temp, 18)
             self.assertEqual(generator.session.get(Activity, 4).workout_type, 1)
             exported_race = next(
                 activity for activity in generator.load() if activity["run_id"] == 4
@@ -234,7 +231,41 @@ class SyncTests(unittest.TestCase):
 
             generator.session.close()
             self.assertIn("workout_type", columns)
-            self.assertIn("average_temp", columns)
+            self.assertIn("weather_temperature", columns)
+
+    def test_enriches_only_uncached_races_with_weather(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            generator = Generator(os.path.join(temporary_directory, "data.db"))
+            route = polyline.encode([(31.0, 121.0), (31.01, 121.01)])
+            uncached_race = cached_activity(1, summary_polyline=route)
+            uncached_race.workout_type = 1
+            cached_race = cached_activity(2, summary_polyline=route)
+            cached_race.name = "上海半程马拉松"
+            cached_race.distance = 21_100
+            cached_race.weather_temperature = 18.2
+            regular_run = cached_activity(3, summary_polyline=route)
+            regular_run.weather_temperature = 22.0
+            generator.session.add_all([uncached_race, cached_race, regular_run])
+            generator.session.commit()
+
+            with patch(
+                "generator.temperature_for_activity",
+                return_value=13.4,
+            ) as lookup:
+                updated_count = generator.enrich_race_weather()
+                second_updated_count = generator.enrich_race_weather()
+
+            self.assertEqual(updated_count, 1)
+            self.assertEqual(second_updated_count, 0)
+            lookup.assert_called_once_with(uncached_race)
+            self.assertEqual(uncached_race.weather_temperature, 13.4)
+            self.assertEqual(cached_race.weather_temperature, 18.2)
+            self.assertIsNone(regular_run.weather_temperature)
+
+            exported = {run["run_id"]: run for run in generator.load()}
+            self.assertEqual(exported[1]["weather_temperature"], 13.4)
+            self.assertEqual(exported[2]["weather_temperature"], 18.2)
+            self.assertNotIn("weather_temperature", exported[3])
 
     def test_sync_failure_rolls_back_updates_and_skips_reconciliation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

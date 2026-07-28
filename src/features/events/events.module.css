@@ -105,8 +105,8 @@
 
 .eventCardPb {
   background:
-    linear-gradient(135deg, rgba(227, 25, 55, 0.24), transparent 56%), #18181b;
-  box-shadow: 0 0 26px -18px rgba(227, 25, 55, 0.9);
+    linear-gradient(135deg, rgba(227, 25, 55, 0.15), transparent 54%), #18181b;
+  box-shadow: 0 0 24px -20px rgba(227, 25, 55, 0.85);
 }
 
 .eventRouteBackground {
@@ -154,28 +154,38 @@
 
 .eventPbBadge {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 13px;
+  right: 13px;
   z-index: 2;
+  border: 0;
   border-radius: 999px;
-  padding: 6px 10px;
-  background: #e31937;
+  padding: 6px 9px 6px 8px;
+  background: linear-gradient(
+    135deg,
+    rgba(227, 25, 55, 0.72),
+    rgba(111, 10, 28, 0.9)
+  );
   color: #fff !important;
-  font-size: 11px !important;
+  font-family: var(--font-mono);
+  font-size: 10px !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   line-height: 1;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  box-shadow: 0 0 18px -6px rgba(227, 25, 55, 0.9);
+  gap: 4px;
+  box-shadow: 0 7px 18px -9px rgba(227, 25, 55, 0.95);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .eventPbMedal {
-  width: 13px;
-  height: 16px;
+  width: 11px;
+  height: 14px;
   color: currentColor;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
   flex: 0 0 auto;
@@ -257,20 +267,31 @@
 .eventModalMetrics {
   margin: 2px 0 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.022);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.065);
+  overflow: hidden;
 }
 
 .eventModalMetric {
+  grid-column: span 2;
   min-width: 0;
-  border: 1px solid rgba(227, 25, 55, 0.24);
-  border-radius: 14px;
-  padding: 10px 12px;
-  background: linear-gradient(
-    145deg,
-    rgba(227, 25, 55, 0.065),
-    rgba(255, 255, 255, 0.025) 72%
-  );
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  padding: 12px 14px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.eventModalMetric:nth-child(3n) {
+  border-right: 0;
+}
+
+.eventModalMetric:nth-child(n + 4) {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .eventModalMetric dt,
@@ -406,5 +427,23 @@
 
   .eventYearHeader strong {
     font-size: 52px;
+  }
+}
+
+@media (max-width: 520px) {
+  .modalBackdrop {
+    padding: 12px;
+  }
+
+  .eventModal {
+    padding: 20px;
+  }
+
+  .eventModalMetric {
+    padding-inline: 8px;
+  }
+
+  .eventModalMetric dt {
+    font-size: 10px;
   }
 }

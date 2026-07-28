@@ -53,7 +53,7 @@ const EventModal = ({
     },
     {
       label: 'Temperature:',
-      value: metricValue(vm.selectedEvent.average_temp, '°C'),
+      value: metricValue(vm.selectedEvent.weather_temperature, '°C', 1),
       primary: false,
     },
     {
