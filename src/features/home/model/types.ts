@@ -40,8 +40,8 @@ export type HomeMetricsViewModel = {
 
 export type EventSummaryViewModel = {
   year: string;
-  marathonRuns: Activity[];
-  latestLongRun: Activity | null;
+  eventRuns: Activity[];
+  latestEvent: Activity | null;
   isEventTouchRevealActive: boolean;
   eventTouchRevealHandlers: TouchRevealHandlers;
 };

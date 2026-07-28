@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { MapRef } from 'react-map-gl';
+import type { MapRef } from '@vis.gl/react-maplibre';
 import type { IViewState } from '@/entities/activity/model/types';
 
 const CAMERA_TRANSITION_MS = 1080;

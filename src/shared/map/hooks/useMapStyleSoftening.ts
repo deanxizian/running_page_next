@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { Map as MapboxMap } from 'mapbox-gl';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import { softenMapBaseLayers, showBaseLayers } from '../layers/baseLayerStyle';
 
 const useMapStyleSoftening = () => {
@@ -33,7 +33,7 @@ const useMapStyleSoftening = () => {
   }, []);
 
   const scheduleBaseStyleReveal = useCallback(
-    (map: MapboxMap) => {
+    (map: MapLibreMap) => {
       if (
         hasRevealedBaseStyleRef.current ||
         baseStyleRevealCleanupRef.current
@@ -58,7 +58,7 @@ const useMapStyleSoftening = () => {
   );
 
   const scheduleBaseStyleRefresh = useCallback(
-    (map: MapboxMap) => {
+    (map: MapLibreMap) => {
       if (styleRefreshFrameRef.current !== null) {
         return;
       }

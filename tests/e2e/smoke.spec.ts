@@ -24,12 +24,16 @@ test.describe('app smoke', () => {
     await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
   });
 
-  test('map provider controls stay hidden', async ({ page }) => {
+  test('MapCN is the only map renderer', async ({ page }) => {
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
+
     await page.goto('/');
 
-    await expect(page.locator('.mapboxgl-map').first()).toBeVisible();
-    await expect(page.locator('.mapboxgl-ctrl-logo')).toBeHidden();
-    await expect(page.locator('.mapboxgl-ctrl-attrib')).toBeHidden();
+    await expect(page.locator('.maplibregl-map').first()).toBeVisible();
+    await expect(page.locator('.maplibregl-ctrl-attrib')).toBeHidden();
+    await expect(page.locator('.mapboxgl-map')).toHaveCount(0);
+    expect(pageErrors).toEqual([]);
   });
 
   test('events modal opens and closes with Escape', async ({ page }) => {

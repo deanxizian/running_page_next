@@ -2,12 +2,12 @@ import type { Activity } from '@/entities/activity/model/types';
 import { convertMovingTime2Sec } from '@/entities/activity/lib/format';
 import {
   getRacePbCategory,
-  isMarathonEventRun,
+  isRaceEventRun,
 } from '@/entities/activity/lib/event';
 import type { RacePbCategory } from '@/entities/activity/lib/event';
 import type { EventGroup } from './types';
 
-const eventRunsFor = (runs: Activity[]) => runs.filter(isMarathonEventRun);
+const eventRunsFor = (runs: Activity[]) => runs.filter(isRaceEventRun);
 
 const groupedEventsFor = (eventRuns: Activity[]): EventGroup[] => {
   const groups = new Map<string, Activity[]>();

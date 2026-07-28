@@ -4,6 +4,10 @@
   background: #202124;
 }
 
+.mapFrame :global(.maplibregl-ctrl-attrib) {
+  display: none !important;
+}
+
 .mapBaseShield {
   position: absolute;
   inset: 0;

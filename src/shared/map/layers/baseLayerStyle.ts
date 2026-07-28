@@ -1,15 +1,10 @@
-import type { AnyLayer, Map as MapboxMap } from 'mapbox-gl';
+import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 
-const RUNNING_LAYER_IDS = new Set([
-  'province',
-  'countries',
-  'runs2',
-  'runs2-indoor',
-]);
-const ROUTE_LAYER_IDS = new Set(['runs2', 'runs2-indoor']);
+const RUNNING_LAYER_IDS = new Set(['province', 'countries', 'runs2']);
+const ROUTE_LAYER_IDS = new Set(['runs2']);
 
 const setBasePaintProperty = (
-  map: MapboxMap,
+  map: MapLibreMap,
   layerId: string,
   property: string,
   value: unknown
@@ -23,7 +18,7 @@ const setBasePaintProperty = (
   }
 };
 
-const softenMapBaseLayers = (map: MapboxMap) => {
+const softenMapBaseLayers = (map: MapLibreMap) => {
   let styleJson;
 
   try {
@@ -32,7 +27,11 @@ const softenMapBaseLayers = (map: MapboxMap) => {
     return;
   }
 
-  const layers = styleJson.layers as AnyLayer[] | undefined;
+  if (!styleJson) {
+    return false;
+  }
+
+  const layers = styleJson.layers as LayerSpecification[] | undefined;
 
   if (!layers?.length) {
     return false;
@@ -119,12 +118,16 @@ const softenMapBaseLayers = (map: MapboxMap) => {
   return true;
 };
 
-const showBaseLayers = (map: MapboxMap) => {
+const showBaseLayers = (map: MapLibreMap) => {
   let styleJson;
 
   try {
     styleJson = map.getStyle();
   } catch {
+    return;
+  }
+
+  if (!styleJson) {
     return;
   }
 

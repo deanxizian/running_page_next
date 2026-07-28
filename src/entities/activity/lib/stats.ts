@@ -14,10 +14,13 @@ interface SummaryStats {
 
 export type RacePbCategory = 'half' | 'full';
 
-const MARATHON_EVENT_NAME_PATTERN =
-  /马拉松|半程|半马|全马|marathon|half\s*marathon/i;
 const HALF_MARATHON_NAME_PATTERN = /半程|半马|half\s*marathon/i;
 const FULL_MARATHON_NAME_PATTERN = /全马|马拉松|marathon/i;
+const STRAVA_RACE_WORKOUT_TYPE = 1;
+const HALF_MARATHON_MIN_DISTANCE = 20_000;
+const HALF_MARATHON_MAX_DISTANCE = 23_000;
+const FULL_MARATHON_MIN_DISTANCE = 40_000;
+const FULL_MARATHON_MAX_DISTANCE = 45_000;
 
 const totalDistance = (runs: Activity[]) =>
   runs.reduce((sum, run) => sum + run.distance / M_TO_DIST, 0);
@@ -30,24 +33,51 @@ const rawActivityName = (run: Activity) => (run.name || '').trim();
 const activityTitleForRun = (run: Activity) =>
   rawActivityName(run) || titleForRun(run);
 
-const isMarathonEventRun = (run: Activity) => {
-  return MARATHON_EVENT_NAME_PATTERN.test(rawActivityName(run));
-};
-
-const getRacePbCategory = (run: Activity): RacePbCategory | null => {
-  const title = rawActivityName(run);
-  const isHalfByName = HALF_MARATHON_NAME_PATTERN.test(title);
-  const isFullByName = !isHalfByName && FULL_MARATHON_NAME_PATTERN.test(title);
-
-  if (isHalfByName) {
+const racePbCategoryForDistance = (distance: number): RacePbCategory | null => {
+  if (
+    distance >= HALF_MARATHON_MIN_DISTANCE &&
+    distance <= HALF_MARATHON_MAX_DISTANCE
+  ) {
     return 'half';
   }
 
-  if (isFullByName) {
+  if (
+    distance >= FULL_MARATHON_MIN_DISTANCE &&
+    distance <= FULL_MARATHON_MAX_DISTANCE
+  ) {
     return 'full';
   }
 
   return null;
+};
+
+const fallbackRaceCategoryFor = (run: Activity): RacePbCategory | null => {
+  const title = rawActivityName(run);
+  const distanceCategory = racePbCategoryForDistance(run.distance);
+  const isHalfByName = HALF_MARATHON_NAME_PATTERN.test(title);
+  const isFullByName = !isHalfByName && FULL_MARATHON_NAME_PATTERN.test(title);
+
+  if (isHalfByName && distanceCategory === 'half') {
+    return 'half';
+  }
+
+  if (isFullByName && distanceCategory === 'full') {
+    return 'full';
+  }
+
+  return null;
+};
+
+const isRaceEventRun = (run: Activity) =>
+  run.workout_type === STRAVA_RACE_WORKOUT_TYPE ||
+  fallbackRaceCategoryFor(run) !== null;
+
+const getRacePbCategory = (run: Activity): RacePbCategory | null => {
+  if (!isRaceEventRun(run)) {
+    return null;
+  }
+
+  return racePbCategoryForDistance(run.distance);
 };
 
 const summarizeRuns = (runs: Activity[]): SummaryStats => {
@@ -77,7 +107,7 @@ export {
   totalDistance,
   totalSeconds,
   activityTitleForRun,
-  isMarathonEventRun,
+  isRaceEventRun,
   getRacePbCategory,
   summarizeRuns,
 };

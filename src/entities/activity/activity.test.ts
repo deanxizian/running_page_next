@@ -14,7 +14,7 @@ import {
 } from './lib/date';
 import { formatDuration, formatPace } from './lib/format';
 import { groupActivities } from './lib/group';
-import { isMarathonEventRun } from './lib/event';
+import { isRaceEventRun } from './lib/event';
 import { geoJsonForRuns, getBoundsForRuns, pathForRun } from './lib/route';
 
 const activity = (overrides: Partial<Activity> = {}): Activity => {
@@ -112,6 +112,9 @@ describe('activity grouping and snapshot', () => {
     expect(() => parseActivities([{ run_id: 1 }])).toThrow(
       'Invalid activity record at index 0.'
     );
+    expect(() => parseActivities([activity({ workout_type: 1.5 })])).toThrow(
+      'Invalid activity record at index 0.'
+    );
   });
 
   it('standardizes known country names', () => {
@@ -125,9 +128,16 @@ describe('activity formatting and event helpers', () => {
     expect(formatPace(4)).toBe('4\'10"');
   });
 
-  it('identifies marathon event runs by name', () => {
-    expect(isMarathonEventRun(activity({ name: '上海半程马拉松' }))).toBe(true);
-    expect(isMarathonEventRun(activity({ name: 'Easy Run' }))).toBe(false);
+  it('identifies fallback races only when title and distance agree', () => {
+    expect(
+      isRaceEventRun(activity({ name: '上海半程马拉松', distance: 21_100 }))
+    ).toBe(true);
+    expect(
+      isRaceEventRun(activity({ name: '上海半程马拉松', distance: 10_000 }))
+    ).toBe(false);
+    expect(
+      isRaceEventRun(activity({ name: 'Easy Run', distance: 21_100 }))
+    ).toBe(false);
   });
 });
 

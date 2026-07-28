@@ -36,11 +36,32 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
 };
 
 describe('eventSelectors', () => {
-  it('filters marathon event runs by title', () => {
-    const eventRun = activity({ run_id: 1, name: '上海半程马拉松' });
-    const normalRun = activity({ run_id: 2, name: 'Easy Run' });
+  it('prefers Strava Race and requires matching title and distance as fallback', () => {
+    const stravaRace = activity({
+      run_id: 1,
+      name: 'Morning Run',
+      distance: 10_000,
+      workout_type: 1,
+    });
+    const fallbackRace = activity({
+      run_id: 2,
+      name: '上海半程马拉松',
+      distance: 21_100,
+    });
+    const titleOnly = activity({
+      run_id: 3,
+      name: '上海半程马拉松',
+      distance: 10_000,
+    });
+    const distanceOnly = activity({
+      run_id: 4,
+      name: 'Easy Run',
+      distance: 21_100,
+    });
 
-    expect(eventRunsFor([eventRun, normalRun])).toEqual([eventRun]);
+    expect(
+      eventRunsFor([stravaRace, fallbackRace, titleOnly, distanceOnly])
+    ).toEqual([stravaRace, fallbackRace]);
   });
 
   it('groups event runs by year descending', () => {
@@ -48,11 +69,13 @@ describe('eventSelectors', () => {
       activity({
         run_id: 1,
         name: '2025 半程马拉松',
+        distance: 21_100,
         start_date_local: '2025-05-01 08:00:00',
       }),
       activity({
         run_id: 2,
         name: '2026 半程马拉松',
+        distance: 21_100,
         start_date_local: '2026-05-01 08:00:00',
       }),
     ];
@@ -66,17 +89,21 @@ describe('eventSelectors', () => {
   it('marks fastest half and full marathon events as PB', () => {
     const halfFast = activity({
       run_id: 1,
-      name: '上海半程马拉松',
+      name: 'Morning Run',
+      distance: 21_100,
       moving_time: '1:20:00',
+      workout_type: 1,
     });
     const halfSlow = activity({
       run_id: 2,
       name: '苏州半程马拉松',
+      distance: 21_100,
       moving_time: '1:30:00',
     });
     const fullFast = activity({
       run_id: 3,
       name: '上海马拉松',
+      distance: 42_195,
       moving_time: '3:10:00',
     });
 

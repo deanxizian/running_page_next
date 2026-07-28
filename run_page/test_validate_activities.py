@@ -11,6 +11,7 @@ def valid_activity():
         "moving_time": "1:00:00",
         "type": "Run",
         "subtype": "Run",
+        "workout_type": 1,
         "start_date": "2026-07-20 00:00:00",
         "start_date_local": "2026-07-20 08:00:00",
         "start_time_local_ms": 1_784_534_400_000,
@@ -47,12 +48,19 @@ class ValidateActivityTests(unittest.TestCase):
             "average_heartrate",
             "elevation_gain",
             "streak",
+            "workout_type",
         ):
             with self.subTest(field=field):
                 activity = valid_activity()
                 activity[field] = True
                 with self.assertRaisesRegex(ValueError, "invalid type|must be finite"):
                     validate_activity(activity, 0)
+
+    def test_accepts_legacy_activity_without_workout_type(self):
+        activity = valid_activity()
+        del activity["workout_type"]
+
+        validate_activity(activity, 0)
 
     def test_rejects_precise_public_locations(self):
         activity = valid_activity()

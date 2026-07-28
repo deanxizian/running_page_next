@@ -1,9 +1,17 @@
 import { lazy, Suspense } from 'react';
 import type { CSSProperties } from 'react';
+import { loadMapcnStyle } from '@/shared/config/map';
 import type { RunMapProps } from './RunMap';
 import { DEFAULT_MAP_HEIGHT } from './lib/bounds';
 
-const RunMap = lazy(() => import('./RunMap'));
+const RunMap = lazy(async () => {
+  const [runMapModule] = await Promise.all([
+    import('./RunMap'),
+    loadMapcnStyle().catch(() => null),
+  ]);
+
+  return runMapModule;
+});
 
 const fallbackStyleFor = (height: RunMapProps['height']): CSSProperties => ({
   width: '100%',

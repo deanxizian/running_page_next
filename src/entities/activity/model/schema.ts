@@ -26,6 +26,11 @@ const isNumber = (value: unknown) =>
 
 const isNullableNumber = (value: unknown) => value === null || isNumber(value);
 
+const isOptionalNullableInteger = (value: unknown) =>
+  value === undefined ||
+  value === null ||
+  (isNumber(value) && Number.isInteger(value));
+
 const isNullableString = (value: unknown) =>
   value === null || value === undefined || isString(value);
 
@@ -93,6 +98,7 @@ const isActivity = (value: unknown): value is Activity => {
     isString(value.moving_time) &&
     isString(value.type) &&
     isString(value.subtype) &&
+    isOptionalNullableInteger(value.workout_type) &&
     isString(value.start_date) &&
     isString(value.start_date_local) &&
     isNumber(value.start_time_local_ms) &&

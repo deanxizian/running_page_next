@@ -59,6 +59,10 @@ Strava API -> run_page/data.db cache -> src/static/activities.json -> frontend
 `run_page/data.db` is a local/cache artifact and is not committed.  
 `src/static/activities.json` is the committed frontend data output.
 
+Race events prefer Strava's `workout_type=1` marker. For legacy activities
+without that marker, marathon titles are accepted only when the recorded
+distance also matches a half marathon (20–23 km) or full marathon (40–45 km).
+
 **Privacy note:** `src/static/activities.json` may contain route and location data. Treat it as public if this site is published.
 
 ## Environment
@@ -66,9 +70,11 @@ Strava API -> run_page/data.db cache -> src/static/activities.json -> frontend
 Frontend:
 
 ```text
-VITE_MAPBOX_TOKEN        required
 VITE_APP_LOCALE          optional, defaults to zh-CN
 ```
+
+Maps use the token-free MapCN stack: MapLibre GL with the CARTO dark-matter
+basemap. There is no alternate Mapbox provider or frontend map token.
 
 Strava sync:
 

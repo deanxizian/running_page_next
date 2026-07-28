@@ -1,23 +1,19 @@
 import { useCallback, useEffect, useRef } from 'react';
-import type { Map as MapboxMap } from 'mapbox-gl';
-import type { MapRef } from 'react-map-gl';
+import type { Map as MapLibreMap } from 'maplibre-gl';
+import type { MapRef } from '@vis.gl/react-maplibre';
 
 type UseMapLifecycleParams = {
   onReady?: () => void;
   reportMapError: () => void;
-  reportTileError: () => void;
   resetBaseStyleReadiness: () => void;
-  resetTileErrors: () => void;
-  scheduleBaseStyleRefresh: (map: MapboxMap) => void;
+  scheduleBaseStyleRefresh: (map: MapLibreMap) => void;
   clearStyleRefresh: () => void;
 };
 
 const useMapLifecycle = ({
   onReady,
   reportMapError,
-  reportTileError,
   resetBaseStyleReadiness,
-  resetTileErrors,
   scheduleBaseStyleRefresh,
   clearStyleRefresh,
 }: UseMapLifecycleParams) => {
@@ -42,7 +38,6 @@ const useMapLifecycle = ({
 
       mapRef.current = ref;
       resetBaseStyleReadiness();
-      resetTileErrors();
       const map = ref.getMap();
 
       const handleStyleData = (event: { dataType?: string }) => {
@@ -54,11 +49,9 @@ const useMapLifecycle = ({
 
       map.on('data', handleStyleData);
       map.on('error', reportMapError);
-      map.on('tileerror', reportTileError);
       mapListenerCleanupRef.current = () => {
         map.off('data', handleStyleData);
         map.off('error', reportMapError);
-        map.off('tileerror', reportTileError);
       };
 
       scheduleBaseStyleRefresh(map);
@@ -66,9 +59,7 @@ const useMapLifecycle = ({
     [
       clearMapListeners,
       reportMapError,
-      reportTileError,
       resetBaseStyleReadiness,
-      resetTileErrors,
       scheduleBaseStyleRefresh,
     ]
   );

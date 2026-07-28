@@ -26,6 +26,7 @@ REQUIRED_FIELDS = {
 OPTIONAL_FIELDS = {
     "location_country": (str, type(None)),
     "summary_polyline": (str, type(None)),
+    "workout_type": (int, type(None)),
 }
 
 

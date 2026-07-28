@@ -22,7 +22,6 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => {
         type: 'Feature',
         properties: {
           runId: run.run_id,
-          indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
         },
         geometry: {
           type: 'LineString',

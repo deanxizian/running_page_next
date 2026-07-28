@@ -572,8 +572,11 @@ Pill 用于紧凑选项或状态：
 
 行为：
 
+- 地图只使用 MapCN：MapLibre GL + CARTO dark-matter。
+- 不读取 Mapbox token，也不保留其他地图 provider 分支。
 - `interactive={false}`。
 - 相机由选中跑步或当前活动集合驱动。
+- 首次加载保留由远到近的相机动画。
 - 地图加载时保留高度。
 - 地图错误显示 overlay。
 
@@ -753,6 +756,10 @@ PB 状态：
 - 赛事卡片必须是 button。
 - 路线背景必须来自真实路线数据。
 - 不在赛事页加密集表格；详情放 modal。
+- Strava `workout_type=1`（Race）的跑步直接计入赛事。
+- 没有 Race 标记时，仅在标题与距离同时匹配时兜底识别：半马
+  `20–23 km`，全马 `40–45 km`。
+- PB 只对赛事中的半马和全马计算；其他距离的 Race 只展示赛事记录。
 
 ## 10. 动效规范
 
@@ -939,7 +946,7 @@ Cursor：
 CSS：
 
 - 页面和组件样式优先用 CSS Modules。
-- 全局 CSS 只放主题变量、base 样式和第三方 mapbox 样式。
+- 全局 CSS 只放主题变量和 base 样式；MapLibre 样式随地图组件懒加载。
 - 响应式规则尽量靠近对应组件样式。
 - 新增颜色和尺寸前先查现有 token/类。
 

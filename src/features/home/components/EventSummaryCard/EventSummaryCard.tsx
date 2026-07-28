@@ -17,7 +17,7 @@ const EventSummaryCard = ({
     }`}
     {...vm.eventTouchRevealHandlers}
   >
-    <span className={styles.eventCount}>{vm.marathonRuns.length}</span>
+    <span className={styles.eventCount}>{vm.eventRuns.length}</span>
     <span className={styles.eventTitle}>
       <strong>Marathon Events</strong>
       <span>in {vm.year}</span>
@@ -25,11 +25,11 @@ const EventSummaryCard = ({
     <span className={styles.latestFinish}>
       <span>Latest Finish</span>
       <strong>
-        {vm.latestLongRun ? activityTitleForRun(vm.latestLongRun) : '-'}
+        {vm.latestEvent ? activityTitleForRun(vm.latestEvent) : '-'}
       </strong>
       <small>
-        {vm.latestLongRun
-          ? vm.latestLongRun.start_date_local.slice(0, 10).replaceAll('-', '/')
+        {vm.latestEvent
+          ? vm.latestEvent.start_date_local.slice(0, 10).replaceAll('-', '/')
           : '-'}
       </small>
     </span>

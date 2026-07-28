@@ -884,7 +884,7 @@
   background: #202124;
 }
 
-.mapPanel :global(.mapboxgl-map) {
+.mapPanel :global(.maplibregl-map) {
   border-radius: 16px;
 }
 
@@ -1310,7 +1310,7 @@
     box-shadow: 0 12px 28px -22px rgba(0, 0, 0, 0.9);
   }
 
-  .mapPanel :global(.mapboxgl-map) {
+  .mapPanel :global(.maplibregl-map) {
     border-radius: 12px;
   }
 

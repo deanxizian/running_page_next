@@ -35,6 +35,7 @@ ACTIVITY_KEYS = [
     "moving_time",
     "type",
     "subtype",
+    "workout_type",
     "start_date",
     "start_date_local",
     "location_country",
@@ -68,6 +69,7 @@ class Activity(Base):
     elapsed_time = Column(Interval)
     type = Column(String)
     subtype = Column(String)
+    workout_type = Column(Integer)
     start_date = Column(String)
     start_date_local = Column(String)
     location_country = Column(String)
@@ -143,6 +145,7 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
 def update_or_create_activity(session, run_activity, refresh_locations=False):
     created = False
     activity = session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
+    workout_type = getattr(run_activity, "workout_type", None)
 
     current_elevation_gain = 0.0
     if (
@@ -167,6 +170,7 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
             elapsed_time=run_activity.elapsed_time,
             type=run_activity.type,
             subtype=run_activity.subtype,
+            workout_type=workout_type,
             start_date=run_activity.start_date,
             start_date_local=run_activity.start_date_local,
             location_country=location_country,
@@ -195,6 +199,7 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
         activity.elapsed_time = run_activity.elapsed_time
         activity.type = run_activity.type
         activity.subtype = run_activity.subtype
+        activity.workout_type = workout_type
         activity.start_date = run_activity.start_date
         activity.start_date_local = run_activity.start_date_local
         activity.location_country = location_country
@@ -218,7 +223,7 @@ def add_missing_columns(engine, model):
         if column.name not in columns:
             missing_columns.append(column)
     if missing_columns:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             for column in missing_columns:
                 column_type = str(column.type)
                 statement = (

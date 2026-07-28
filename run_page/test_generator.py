@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import stat
 import tempfile
 import unittest
@@ -19,7 +20,7 @@ from generator.db import Activity
 from strava_sync import write_private_text
 
 
-def strava_activity(run_id, *, average_speed=2.8):
+def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
     return SimpleNamespace(
         id=run_id,
         name=f"Run {run_id}",
@@ -27,6 +28,7 @@ def strava_activity(run_id, *, average_speed=2.8):
         moving_time=timedelta(hours=1),
         elapsed_time=timedelta(hours=1),
         type="Run",
+        workout_type=workout_type,
         start_date="2026-07-20 00:00:00",
         start_date_local="2026-07-20 08:00:00",
         location_country="France",
@@ -47,6 +49,7 @@ def cached_activity(run_id, activity_type="Run", summary_polyline=""):
         elapsed_time=timedelta(minutes=30),
         type=activity_type,
         subtype=activity_type,
+        workout_type=None,
         start_date=f"2026-07-{run_id:02d} 00:00:00",
         start_date_local=f"2026-07-{run_id:02d} 08:00:00",
         location_country="France",
@@ -169,7 +172,7 @@ class SyncTests(unittest.TestCase):
             }
             generator.client.get_activities.return_value = [
                 strava_activity(2),
-                strava_activity(4),
+                strava_activity(4, workout_type=1),
             ]
             persisted_tokens = []
 
@@ -185,6 +188,11 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(persisted_tokens, ["rotated"])
             self.assertEqual(remaining_ids, {2, 3, 4})
             self.assertEqual(generator.session.get(Activity, 4).average_heartrate, 150)
+            self.assertEqual(generator.session.get(Activity, 4).workout_type, 1)
+            exported_race = next(
+                activity for activity in generator.load() if activity["run_id"] == 4
+            )
+            self.assertEqual(exported_race["workout_type"], 1)
 
     def test_incremental_sync_does_not_reconcile_cached_runs(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -205,6 +213,24 @@ class SyncTests(unittest.TestCase):
                 activity.run_id for activity in generator.session.query(Activity)
             }
             self.assertEqual(remaining_ids, {1, 2})
+
+    def test_existing_cache_gets_workout_type_column(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            db_path = os.path.join(temporary_directory, "data.db")
+            with sqlite3.connect(db_path) as connection:
+                connection.execute(
+                    "CREATE TABLE activities (run_id INTEGER PRIMARY KEY)"
+                )
+
+            generator = Generator(db_path)
+            with sqlite3.connect(db_path) as connection:
+                columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(activities)")
+                }
+
+            generator.session.close()
+            self.assertIn("workout_type", columns)
 
     def test_sync_failure_rolls_back_updates_and_skips_reconciliation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

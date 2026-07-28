@@ -6,7 +6,7 @@ import {
 } from '@/entities/activity/lib/date';
 import { formatMonthlyBarDistance } from '@/entities/activity/lib/format';
 import {
-  isMarathonEventRun,
+  isRaceEventRun,
   totalDistance,
   totalSeconds,
 } from '@/entities/activity/lib/stats';
@@ -147,13 +147,13 @@ const eventSummaryFor = (
   sortedActivities: Activity[],
   latestRun: Activity | null
 ) => {
-  const marathonRuns = currentYearRuns.filter(isMarathonEventRun);
-  const latestLongRun =
-    marathonRuns[0] ?? sortedActivities.find(isMarathonEventRun) ?? latestRun;
+  const eventRuns = currentYearRuns.filter(isRaceEventRun);
+  const latestEvent =
+    eventRuns[0] ?? sortedActivities.find(isRaceEventRun) ?? latestRun;
 
   return {
-    marathonRuns,
-    latestLongRun: latestLongRun ?? null,
+    eventRuns,
+    latestEvent: latestEvent ?? null,
   };
 };
 

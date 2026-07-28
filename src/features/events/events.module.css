@@ -304,7 +304,7 @@
   border-radius: 16px;
 }
 
-.eventModalMap :global(.mapboxgl-map) {
+.eventModalMap :global(.maplibregl-map) {
   border-radius: 16px;
 }
 

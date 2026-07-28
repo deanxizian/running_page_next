@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import ReactMap, { Layer, Source } from 'react-map-gl';
+import ReactMap, { Layer, Source } from '@vis.gl/react-maplibre';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import type { IViewState } from '@/entities/activity/model/types';
-import { MAPBOX_TOKEN } from '@/shared/config/env';
 import { IS_CHINESE } from '@/shared/config/i18n';
-import { MAP_STYLE_URL } from '@/shared/config/map';
+import { getMapcnStyle } from '@/shared/config/map';
 import type { FeatureCollection } from '@/types/geojson';
 import type { RPGeometry } from '@/static/run_countries';
 import { MapErrorOverlay } from './components/MapErrorOverlay';
@@ -15,17 +16,13 @@ import { useMapLifecycle } from './hooks/useMapLifecycle';
 import { useMapStyleSoftening } from './hooks/useMapStyleSoftening';
 import {
   countryFillPaint,
-  indoorRunFilter,
-  indoorRunPaintFor,
-  outdoorRunFilter,
-  outdoorRunPaintFor,
   provinceFillPaint,
+  runPaintFor,
   routeLineLayout,
 } from './layers/routeLayers';
 import { DEFAULT_MAP_HEIGHT, isBigMapZoom } from './lib/bounds';
 import { filterExpressionFor, isSingleRunGeoData } from './lib/geojson';
 import styles from './style.module.css';
-import './mapbox.css';
 
 export interface RunMapProps {
   viewState: IViewState;
@@ -61,15 +58,12 @@ const RunMap = ({
     resetBaseStyleReadiness,
     scheduleBaseStyleRefresh,
   } = useMapStyleSoftening();
-  const { mapError, reportMapError, reportTileError, resetTileErrors } =
-    useMapError();
+  const { mapError, reportMapError } = useMapError();
   const { handleMapLoad, mapRef, mapRefCallback } = useMapLifecycle({
     clearStyleRefresh,
     onReady,
     reportMapError,
-    reportTileError,
     resetBaseStyleReadiness,
-    resetTileErrors,
     scheduleBaseStyleRefresh,
   });
 
@@ -110,14 +104,15 @@ const RunMap = ({
   return (
     <div className={styles.mapFrame} style={frameStyle}>
       <ReactMap
+        mapLib={maplibregl}
         initialViewState={viewState}
         style={mapStyle}
-        mapStyle={MAP_STYLE_URL}
+        mapStyle={getMapcnStyle()}
         ref={mapRefCallback}
         interactive={false}
         cooperativeGestures={false}
-        mapboxAccessToken={MAPBOX_TOKEN}
         attributionControl={false}
+        renderWorldCopies={false}
         onLoad={handleMapLoad}
       >
         <Source id="data" type="geojson" data={combinedGeoData}>
@@ -136,16 +131,8 @@ const RunMap = ({
           <Layer
             id="runs2"
             type="line"
-            paint={outdoorRunPaintFor(isBigMap, isSingleRun)}
+            paint={runPaintFor(isBigMap, isSingleRun)}
             layout={routeLineLayout}
-            filter={outdoorRunFilter}
-          />
-          <Layer
-            id="runs2-indoor"
-            type="line"
-            paint={indoorRunPaintFor(isBigMap, isSingleRun)}
-            layout={routeLineLayout}
-            filter={indoorRunFilter}
           />
         </Source>
       </ReactMap>
