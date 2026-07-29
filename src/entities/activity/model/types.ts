@@ -6,8 +6,7 @@ export interface Activity {
   distance: number;
   moving_time: string;
   type: string;
-  subtype: string;
-  workout_type?: number | null;
+  workout_type: number | null;
   start_date: string;
   start_date_local: string;
   /**

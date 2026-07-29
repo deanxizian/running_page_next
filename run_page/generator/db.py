@@ -34,7 +34,6 @@ ACTIVITY_KEYS = [
     "distance",
     "moving_time",
     "type",
-    "subtype",
     "workout_type",
     "start_date",
     "start_date_local",
@@ -69,7 +68,6 @@ class Activity(Base):
     moving_time = Column(Interval)
     elapsed_time = Column(Interval)
     type = Column(String)
-    subtype = Column(String)
     workout_type = Column(Integer)
     start_date = Column(String)
     start_date_local = Column(String)
@@ -173,7 +171,6 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
             moving_time=run_activity.moving_time,
             elapsed_time=run_activity.elapsed_time,
             type=run_activity.type,
-            subtype=run_activity.subtype,
             workout_type=workout_type,
             start_date=run_activity.start_date,
             start_date_local=run_activity.start_date_local,
@@ -202,7 +199,6 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
         activity.moving_time = run_activity.moving_time
         activity.elapsed_time = run_activity.elapsed_time
         activity.type = run_activity.type
-        activity.subtype = run_activity.subtype
         activity.workout_type = workout_type
         activity.start_date = run_activity.start_date
         activity.start_date_local = run_activity.start_date_local

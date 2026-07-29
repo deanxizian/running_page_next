@@ -48,7 +48,6 @@ def cached_activity(run_id, activity_type="Run", summary_polyline=""):
         moving_time=timedelta(minutes=30),
         elapsed_time=timedelta(minutes=30),
         type=activity_type,
-        subtype=activity_type,
         workout_type=None,
         start_date=f"2026-07-{run_id:02d} 00:00:00",
         start_date_local=f"2026-07-{run_id:02d} 08:00:00",
@@ -193,6 +192,7 @@ class SyncTests(unittest.TestCase):
                 activity for activity in generator.load() if activity["run_id"] == 4
             )
             self.assertEqual(exported_race["workout_type"], 1)
+            self.assertNotIn("subtype", exported_race)
 
     def test_incremental_sync_does_not_reconcile_cached_runs(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -219,7 +219,8 @@ class SyncTests(unittest.TestCase):
             db_path = os.path.join(temporary_directory, "data.db")
             with sqlite3.connect(db_path) as connection:
                 connection.execute(
-                    "CREATE TABLE activities (run_id INTEGER PRIMARY KEY)"
+                    "CREATE TABLE activities "
+                    "(run_id INTEGER PRIMARY KEY, subtype VARCHAR)"
                 )
 
             generator = Generator(db_path)

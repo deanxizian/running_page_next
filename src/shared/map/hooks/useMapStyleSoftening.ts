@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { softenMapBaseLayers, showBaseLayers } from '../layers/baseLayerStyle';
+import { softenMapBaseLayers } from '../layers/baseLayerStyle';
 
 const useMapStyleSoftening = () => {
   const styleRefreshFrameRef = useRef<number | null>(null);
@@ -30,7 +30,6 @@ const useMapStyleSoftening = () => {
 
   const refreshBaseStyle = useCallback((map: MapLibreMap) => {
     softenMapBaseLayers(map);
-    showBaseLayers(map);
   }, []);
 
   const scheduleBaseStyleRefresh = useCallback(

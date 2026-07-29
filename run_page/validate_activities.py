@@ -13,7 +13,7 @@ REQUIRED_FIELDS = {
     "distance": (int, float),
     "moving_time": str,
     "type": str,
-    "subtype": str,
+    "workout_type": (int, type(None)),
     "start_date": str,
     "start_date_local": str,
     "start_time_local_ms": int,
@@ -28,7 +28,6 @@ REQUIRED_FIELDS = {
 OPTIONAL_FIELDS = {
     "location_country": (str, type(None)),
     "summary_polyline": (str, type(None)),
-    "workout_type": (int, type(None)),
     "weather_temperature": (int, float, type(None)),
 }
 

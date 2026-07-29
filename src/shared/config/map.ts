@@ -39,6 +39,4 @@ const localizeMapLabels = (style: StyleSpecification): StyleSpecification => ({
 const MAPCN_STYLE = localizeMapLabels(mapcnDarkStyle as StyleSpecification);
 const getMapcnStyle = () => MAPCN_STYLE;
 
-const LINE_OPACITY = 0.4;
-
-export { getMapcnStyle, LINE_OPACITY };
+export { getMapcnStyle };

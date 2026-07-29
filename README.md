@@ -59,9 +59,9 @@ Strava API -> run_page/data.db cache -> src/static/activities.json -> frontend
 `run_page/data.db` is a local/cache artifact and is not committed.  
 `src/static/activities.json` is the committed frontend data output.
 
-Race events prefer Strava's `workout_type=1` marker. For legacy activities
-without that marker, marathon titles are accepted only when the recorded
-distance also matches a half marathon (20–23 km) or full marathon (40–45 km).
+Race events prefer Strava's `workout_type=1` marker. For activities without
+that marker, marathon titles are accepted only when the recorded distance also
+matches a half marathon (20–23 km) or full marathon (40–45 km).
 Only those race events request hourly weather from Open-Meteo. Their
 activity-time average temperature is cached in `run_page/data.db` and exported;
 regular runs do not request or contain weather data. No Open-Meteo API key is

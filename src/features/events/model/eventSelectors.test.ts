@@ -21,7 +21,7 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
     distance: 10000,
     moving_time: '1:00:00',
     type: 'Run',
-    subtype: 'Run',
+    workout_type: null,
     start_date: '2026-05-01 00:00:00',
     start_date_local: startDateLocal,
     ...dateFields,

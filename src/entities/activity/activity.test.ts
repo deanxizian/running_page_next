@@ -31,7 +31,7 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
     distance: 10000,
     moving_time: '1:00:00',
     type: 'Run',
-    subtype: 'Run',
+    workout_type: null,
     start_date: '2026-05-01 00:00:00',
     start_date_local: startDateLocal,
     ...dateFields,
@@ -109,7 +109,12 @@ describe('activity grouping and snapshot', () => {
   });
 
   it('rejects invalid activity data', () => {
+    const { workout_type: _workoutType, ...withoutWorkoutType } = activity();
+
     expect(() => parseActivities([{ run_id: 1 }])).toThrow(
+      'Invalid activity record at index 0.'
+    );
+    expect(() => parseActivities([withoutWorkoutType])).toThrow(
       'Invalid activity record at index 0.'
     );
     expect(() => parseActivities([activity({ workout_type: 1.5 })])).toThrow(

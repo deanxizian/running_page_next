@@ -311,7 +311,6 @@ class Generator:
                 activity.elevation_gain = getattr(
                     activity, "total_elevation_gain", None
                 )
-                activity.subtype = activity.type
                 created = update_or_create_activity(
                     self.session,
                     activity,

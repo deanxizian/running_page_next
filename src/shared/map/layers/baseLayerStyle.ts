@@ -1,7 +1,6 @@
 import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 
 const RUNNING_LAYER_IDS = new Set(['province', 'countries', 'runs2']);
-const ROUTE_LAYER_IDS = new Set(['runs2']);
 
 const setBasePaintProperty = (
   map: MapLibreMap,
@@ -118,28 +117,4 @@ const softenMapBaseLayers = (map: MapLibreMap) => {
   return true;
 };
 
-const showBaseLayers = (map: MapLibreMap) => {
-  let styleJson;
-
-  try {
-    styleJson = map.getStyle();
-  } catch {
-    return;
-  }
-
-  if (!styleJson) {
-    return;
-  }
-
-  styleJson.layers?.forEach((layer: { id: string }) => {
-    try {
-      if (!ROUTE_LAYER_IDS.has(layer.id) && map.getLayer(layer.id)) {
-        map.setLayoutProperty(layer.id, 'visibility', 'visible');
-      }
-    } catch {
-      // Third-party styles can change while data events are still firing.
-    }
-  });
-};
-
-export { softenMapBaseLayers, showBaseLayers };
+export { softenMapBaseLayers };

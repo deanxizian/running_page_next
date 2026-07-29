@@ -21,7 +21,7 @@ const activity = (
     distance,
     moving_time: '1:00:00',
     type: 'Run',
-    subtype: 'Run',
+    workout_type: null,
     start_date: startDateLocal,
     start_date_local: startDateLocal,
     ...dateFields,

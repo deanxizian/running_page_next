@@ -10,7 +10,6 @@ def valid_activity():
         "distance": 10_000,
         "moving_time": "1:00:00",
         "type": "Run",
-        "subtype": "Run",
         "workout_type": 1,
         "start_date": "2026-07-20 00:00:00",
         "start_date_local": "2026-07-20 08:00:00",
@@ -71,12 +70,13 @@ class ValidateActivityTests(unittest.TestCase):
         activity["distance"] = 21_100
         validate_activity(activity, 0)
 
-    def test_accepts_legacy_activity_without_workout_type(self):
+    def test_requires_workout_type(self):
         activity = valid_activity()
         del activity["workout_type"]
         del activity["weather_temperature"]
 
-        validate_activity(activity, 0)
+        with self.assertRaisesRegex(ValueError, "missing required field workout_type"):
+            validate_activity(activity, 0)
 
     def test_rejects_precise_public_locations(self):
         activity = valid_activity()

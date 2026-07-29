@@ -6,7 +6,7 @@ const REQUIRED_ACTIVITY_FIELDS = [
   'distance',
   'moving_time',
   'type',
-  'subtype',
+  'workout_type',
   'start_date',
   'start_date_local',
   'start_time_local_ms',
@@ -29,10 +29,8 @@ const isNullableNumber = (value: unknown) => value === null || isNumber(value);
 const isOptionalNullableNumber = (value: unknown) =>
   value === undefined || isNullableNumber(value);
 
-const isOptionalNullableInteger = (value: unknown) =>
-  value === undefined ||
-  value === null ||
-  (isNumber(value) && Number.isInteger(value));
+const isNullableInteger = (value: unknown) =>
+  value === null || (isNumber(value) && Number.isInteger(value));
 
 const isNullableString = (value: unknown) =>
   value === null || value === undefined || isString(value);
@@ -100,8 +98,7 @@ const isActivity = (value: unknown): value is Activity => {
     isNumber(value.distance) &&
     isString(value.moving_time) &&
     isString(value.type) &&
-    isString(value.subtype) &&
-    isOptionalNullableInteger(value.workout_type) &&
+    isNullableInteger(value.workout_type) &&
     isString(value.start_date) &&
     isString(value.start_date_local) &&
     isNumber(value.start_time_local_ms) &&
