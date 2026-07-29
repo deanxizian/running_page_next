@@ -72,7 +72,9 @@ required.
 ## Environment
 
 Maps use the token-free MapCN stack: MapLibre GL with the CARTO dark-matter
-basemap. There is no alternate Mapbox provider or frontend map token.
+basemap. The checked-in style keeps the visual treatment stable and points
+directly to CARTO vector tiles to avoid remote style and TileJSON waterfalls.
+There is no alternate Mapbox provider or frontend map token.
 
 Strava sync:
 

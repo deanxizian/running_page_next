@@ -1,7 +1,14 @@
 .mapFrame {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   background: #202124;
+}
+
+.mapFrame :global(.maplibregl-map),
+.mapFrame :global(.maplibregl-canvas-container),
+.mapFrame :global(.maplibregl-canvas) {
+  background-color: #202124;
 }
 
 .mapFrame :global(.maplibregl-ctrl-attrib) {

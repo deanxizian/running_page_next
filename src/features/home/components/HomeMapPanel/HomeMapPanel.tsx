@@ -1,7 +1,9 @@
-import RunMap from '@/shared/map/LazyRunMap';
+import RunMap, { preloadRunMap } from '@/shared/map/LazyRunMap';
 import { MAP_PANEL_HEIGHT } from '@/shared/lib/dashboard';
 import type { HomeMapViewModel } from '../../model/types';
 import styles from '@/shared/ui/dashboard.module.css';
+
+preloadRunMap();
 
 const HomeMapPanel = ({
   id,

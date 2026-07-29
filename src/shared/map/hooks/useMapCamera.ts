@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { MapRef } from '@vis.gl/react-maplibre';
 import type { IViewState } from '@/entities/activity/model/types';
@@ -26,6 +26,15 @@ const useMapCamera = ({
 }: UseMapCameraParams) => {
   const isProgrammaticMoveRef = useRef(false);
   const cameraAnimationTimeoutRef = useRef<number | null>(null);
+  const cancelCameraAnimationRef = useRef<(() => void) | null>(null);
+
+  useLayoutEffect(
+    () => () => {
+      cancelCameraAnimationRef.current?.();
+      cancelCameraAnimationRef.current = null;
+    },
+    []
+  );
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
@@ -101,16 +110,32 @@ const useMapCamera = ({
       essential: false,
     });
 
+    let hasCancelledAnimation = false;
+    const cancelCameraAnimation = () => {
+      if (hasCancelledAnimation) {
+        return;
+      }
+
+      hasCancelledAnimation = true;
+      isProgrammaticMoveRef.current = false;
+      map.off('moveend', finishCameraMove);
+      if (cameraAnimationTimeoutRef.current) {
+        window.clearTimeout(cameraAnimationTimeoutRef.current);
+        cameraAnimationTimeoutRef.current = null;
+      }
+      map.stop();
+    };
+    cancelCameraAnimationRef.current = cancelCameraAnimation;
+
     cameraAnimationTimeoutRef.current = window.setTimeout(() => {
       map.off('moveend', finishCameraMove);
       finishCameraMove();
     }, CAMERA_TRANSITION_MS + 120);
 
     return () => {
-      map.off('moveend', finishCameraMove);
-      if (cameraAnimationTimeoutRef.current) {
-        window.clearTimeout(cameraAnimationTimeoutRef.current);
-        cameraAnimationTimeoutRef.current = null;
+      cancelCameraAnimation();
+      if (cancelCameraAnimationRef.current === cancelCameraAnimation) {
+        cancelCameraAnimationRef.current = null;
       }
     };
   }, [

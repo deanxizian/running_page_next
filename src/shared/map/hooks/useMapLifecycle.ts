@@ -5,6 +5,7 @@ import type { MapRef } from '@vis.gl/react-maplibre';
 type UseMapLifecycleParams = {
   onReady?: () => void;
   reportMapError: () => void;
+  finalizeBaseStyle: (map: MapLibreMap) => void;
   resetBaseStyleReadiness: () => void;
   scheduleBaseStyleRefresh: (map: MapLibreMap) => void;
   clearStyleRefresh: () => void;
@@ -13,6 +14,7 @@ type UseMapLifecycleParams = {
 const useMapLifecycle = ({
   onReady,
   reportMapError,
+  finalizeBaseStyle,
   resetBaseStyleReadiness,
   scheduleBaseStyleRefresh,
   clearStyleRefresh,
@@ -37,7 +39,6 @@ const useMapLifecycle = ({
       }
 
       mapRef.current = ref;
-      resetBaseStyleReadiness();
       const map = ref.getMap();
 
       const handleStyleData = (event: { dataType?: string }) => {
@@ -54,41 +55,38 @@ const useMapLifecycle = ({
         map.off('error', reportMapError);
       };
 
-      scheduleBaseStyleRefresh(map);
+      if (hasNotifiedReadyRef.current) {
+        finalizeBaseStyle(map);
+      } else {
+        resetBaseStyleReadiness();
+        scheduleBaseStyleRefresh(map);
+      }
     },
     [
       clearMapListeners,
+      finalizeBaseStyle,
       reportMapError,
       resetBaseStyleReadiness,
       scheduleBaseStyleRefresh,
     ]
   );
 
-  const handleMapLoad = useCallback(() => {
-    if (hasNotifiedReadyRef.current) {
-      return;
-    }
-
-    const notifyReady = () => {
+  const handleMapLoad = useCallback(
+    (event?: { target?: MapLibreMap }) => {
       if (hasNotifiedReadyRef.current) {
         return;
       }
+
+      const map = event?.target ?? mapRef.current?.getMap();
+      if (map) {
+        finalizeBaseStyle(map);
+      }
+
       hasNotifiedReadyRef.current = true;
       onReady?.();
-    };
-
-    const map = mapRef.current?.getMap();
-    if (!map) {
-      notifyReady();
-      return;
-    }
-
-    const fallbackTimer = window.setTimeout(notifyReady, 500);
-    map.once('idle', () => {
-      window.clearTimeout(fallbackTimer);
-      notifyReady();
-    });
-  }, [onReady]);
+    },
+    [finalizeBaseStyle, onReady]
+  );
 
   useEffect(() => clearMapListeners, [clearMapListeners]);
 

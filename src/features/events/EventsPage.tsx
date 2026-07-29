@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useDashboardData } from '@/app/DashboardLayout';
+import { preloadRunMap } from '@/shared/map/LazyRunMap';
 import EventList from './components/EventList';
 import EventModal from './components/EventModal';
 import { useEventsPage } from './model/useEventsPage';
@@ -8,6 +10,10 @@ import styles from '@/features/events/events.module.css';
 const EventsPage = () => {
   const { activitySnapshot } = useDashboardData();
   const eventsPage = useEventsPage(activitySnapshot.sortedActivities);
+
+  useEffect(() => {
+    preloadRunMap();
+  }, []);
 
   return (
     <main className={`${sharedStyles.main} ${styles.eventsMain}`}>

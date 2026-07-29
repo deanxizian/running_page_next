@@ -1,17 +1,24 @@
 import { lazy, Suspense } from 'react';
 import type { CSSProperties } from 'react';
-import { loadMapcnStyle } from '@/shared/config/map';
 import type { RunMapProps } from './RunMap';
 import { DEFAULT_MAP_HEIGHT } from './lib/bounds';
 
-const RunMap = lazy(async () => {
-  const [runMapModule] = await Promise.all([
-    import('./RunMap'),
-    loadMapcnStyle().catch(() => null),
-  ]);
+let runMapModuleRequest: ReturnType<typeof importRunMap> | null = null;
 
-  return runMapModule;
-});
+function importRunMap() {
+  return import('./RunMap');
+}
+
+const loadRunMap = () => {
+  runMapModuleRequest ??= importRunMap();
+  return runMapModuleRequest;
+};
+
+const preloadRunMap = () => {
+  void loadRunMap();
+};
+
+const RunMap = lazy(loadRunMap);
 
 const fallbackStyleFor = (height: RunMapProps['height']): CSSProperties => ({
   width: '100%',
@@ -27,4 +34,5 @@ const LazyRunMap = (props: RunMapProps) => (
   </Suspense>
 );
 
+export { preloadRunMap };
 export default LazyRunMap;

@@ -573,10 +573,13 @@ Pill 用于紧凑选项或状态：
 行为：
 
 - 地图只使用 MapCN：MapLibre GL + CARTO dark-matter。
+- 地图文字固定为简体中文优先，缺少简体中文名称时依次回退到中文、原名和英文。
 - 不读取 Mapbox token，也不保留其他地图 provider 分支。
 - `interactive={false}`。
 - 相机由选中跑步或当前活动集合驱动。
 - 首次加载保留由远到近的相机动画。
+- CARTO dark-matter 样式固定在仓库中，直接引用同源 CARTO vector tiles，避免远程 style 和 TileJSON 串行请求。
+- 首页提前加载 MapLibre；底图首次完整渲染后立即开始相机动画，不等待 `idle`。
 - 地图加载时保留高度。
 - 地图错误显示 overlay。
 

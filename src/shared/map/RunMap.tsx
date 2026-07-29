@@ -23,6 +23,8 @@ import { DEFAULT_MAP_HEIGHT, isBigMapZoom } from './lib/bounds';
 import { filterExpressionFor, isSingleRunGeoData } from './lib/geojson';
 import styles from './style.module.css';
 
+maplibregl.prewarm();
+
 export interface RunMapProps {
   viewState: IViewState;
   setViewState: (_viewState: IViewState) => void;
@@ -52,6 +54,7 @@ const RunMap = ({
   });
   const {
     clearStyleRefresh,
+    finalizeBaseStyle,
     isBaseStyleReady,
     resetBaseStyleReadiness,
     scheduleBaseStyleRefresh,
@@ -59,6 +62,7 @@ const RunMap = ({
   const { mapError, reportMapError } = useMapError();
   const { handleMapLoad, mapRef, mapRefCallback } = useMapLifecycle({
     clearStyleRefresh,
+    finalizeBaseStyle,
     onReady,
     reportMapError,
     resetBaseStyleReadiness,
@@ -110,6 +114,8 @@ const RunMap = ({
         interactive={false}
         cooperativeGestures={false}
         attributionControl={false}
+        reuseMaps
+        validateStyle={false}
         renderWorldCopies={false}
         onLoad={handleMapLoad}
       >

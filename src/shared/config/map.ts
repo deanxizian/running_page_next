@@ -1,40 +1,44 @@
 import type { StyleSpecification } from 'maplibre-gl';
+import mapcnDarkStyle from './mapcn-dark-style.json';
 
-const MAPCN_STYLE_URL =
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+type MapLayer = StyleSpecification['layers'][number];
+type SymbolLayer = Extract<MapLayer, { type: 'symbol' }>;
+type TextField = NonNullable<NonNullable<SymbolLayer['layout']>['text-field']>;
 
-let cachedMapcnStyle: StyleSpecification | null = null;
-let mapcnStyleRequest: Promise<StyleSpecification> | null = null;
+const CHINESE_LABEL_TEXT_FIELD = [
+  'coalesce',
+  ['get', 'name:zh-Hans'],
+  ['get', 'name:zh'],
+  ['get', 'name'],
+  ['get', 'name_en'],
+] as TextField;
 
-const loadMapcnStyle = () => {
-  if (cachedMapcnStyle) {
-    return Promise.resolve(cachedMapcnStyle);
-  }
+const usesNameLabel = (textField: unknown) =>
+  JSON.stringify(textField)?.includes('{name') ?? false;
 
-  if (!mapcnStyleRequest) {
-    mapcnStyleRequest = fetch(MAPCN_STYLE_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Map style request failed: ${response.status}`);
-        }
+const localizeMapLabels = (style: StyleSpecification): StyleSpecification => ({
+  ...style,
+  layers: style.layers.map((layer) => {
+    if (
+      layer.type !== 'symbol' ||
+      !usesNameLabel(layer.layout?.['text-field'])
+    ) {
+      return layer;
+    }
 
-        return response.json() as Promise<StyleSpecification>;
-      })
-      .then((style) => {
-        cachedMapcnStyle = style;
-        return style;
-      })
-      .catch((error: unknown) => {
-        mapcnStyleRequest = null;
-        throw error;
-      });
-  }
+    return {
+      ...layer,
+      layout: {
+        ...layer.layout,
+        'text-field': CHINESE_LABEL_TEXT_FIELD,
+      },
+    };
+  }),
+});
 
-  return mapcnStyleRequest;
-};
-
-const getMapcnStyle = () => cachedMapcnStyle ?? MAPCN_STYLE_URL;
+const MAPCN_STYLE = localizeMapLabels(mapcnDarkStyle as StyleSpecification);
+const getMapcnStyle = () => MAPCN_STYLE;
 
 const LINE_OPACITY = 0.4;
 
-export { getMapcnStyle, LINE_OPACITY, loadMapcnStyle };
+export { getMapcnStyle, LINE_OPACITY };

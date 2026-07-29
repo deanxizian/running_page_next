@@ -4,7 +4,6 @@ import { softenMapBaseLayers, showBaseLayers } from '../layers/baseLayerStyle';
 
 const useMapStyleSoftening = () => {
   const styleRefreshFrameRef = useRef<number | null>(null);
-  const baseStyleRevealCleanupRef = useRef<(() => void) | null>(null);
   const hasRevealedBaseStyleRef = useRef(false);
   const [isBaseStyleReady, setIsBaseStyleReady] = useState(false);
 
@@ -13,9 +12,6 @@ const useMapStyleSoftening = () => {
       window.cancelAnimationFrame(styleRefreshFrameRef.current);
       styleRefreshFrameRef.current = null;
     }
-
-    baseStyleRevealCleanupRef.current?.();
-    baseStyleRevealCleanupRef.current = null;
   }, []);
 
   const revealBaseStyle = useCallback(() => {
@@ -32,30 +28,10 @@ const useMapStyleSoftening = () => {
     setIsBaseStyleReady(false);
   }, []);
 
-  const scheduleBaseStyleReveal = useCallback(
-    (map: MapLibreMap) => {
-      if (
-        hasRevealedBaseStyleRef.current ||
-        baseStyleRevealCleanupRef.current
-      ) {
-        return;
-      }
-
-      const reveal = () => {
-        baseStyleRevealCleanupRef.current?.();
-        revealBaseStyle();
-      };
-      const fallbackTimer = window.setTimeout(reveal, 700);
-
-      baseStyleRevealCleanupRef.current = () => {
-        map.off('idle', reveal);
-        window.clearTimeout(fallbackTimer);
-        baseStyleRevealCleanupRef.current = null;
-      };
-      map.once('idle', reveal);
-    },
-    [revealBaseStyle]
-  );
+  const refreshBaseStyle = useCallback((map: MapLibreMap) => {
+    softenMapBaseLayers(map);
+    showBaseLayers(map);
+  }, []);
 
   const scheduleBaseStyleRefresh = useCallback(
     (map: MapLibreMap) => {
@@ -65,19 +41,28 @@ const useMapStyleSoftening = () => {
 
       styleRefreshFrameRef.current = window.requestAnimationFrame(() => {
         styleRefreshFrameRef.current = null;
-        const didRefreshBaseStyle = softenMapBaseLayers(map);
-        showBaseLayers(map);
-
-        if (didRefreshBaseStyle) {
-          scheduleBaseStyleReveal(map);
-        }
+        refreshBaseStyle(map);
       });
     },
-    [scheduleBaseStyleReveal]
+    [refreshBaseStyle]
+  );
+
+  const finalizeBaseStyle = useCallback(
+    (map: MapLibreMap) => {
+      if (styleRefreshFrameRef.current !== null) {
+        window.cancelAnimationFrame(styleRefreshFrameRef.current);
+        styleRefreshFrameRef.current = null;
+      }
+
+      refreshBaseStyle(map);
+      revealBaseStyle();
+    },
+    [refreshBaseStyle, revealBaseStyle]
   );
 
   return {
     clearStyleRefresh,
+    finalizeBaseStyle,
     isBaseStyleReady,
     resetBaseStyleReadiness,
     scheduleBaseStyleRefresh,
