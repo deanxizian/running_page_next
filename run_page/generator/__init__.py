@@ -11,7 +11,12 @@ from activity_rules import is_race_event
 from race_weather import temperature_for_activity
 from sqlalchemy import func
 
-from .db import Activity, init_db, update_or_create_activity
+from .db import (
+    Activity,
+    init_db,
+    strava_activity_type,
+    update_or_create_activity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +211,7 @@ def sanitize_activity_for_public(activity):
 
 class Generator:
     def __init__(self, db_path):
-        self.client = stravalib.Client()
+        self.client = None
         self.session = init_db(db_path)
 
         self.client_id = ""
@@ -218,10 +223,14 @@ class Generator:
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_token = refresh_token
+        self.client = stravalib.Client()
 
     def check_access(self):
+        if self.client is None:
+            raise RuntimeError("Strava client is not configured")
+
         response = self.client.refresh_access_token(
-            client_id=self.client_id,
+            client_id=int(self.client_id),
             client_secret=self.client_secret,
             refresh_token=self.refresh_token,
         )
@@ -282,6 +291,9 @@ class Generator:
 
     def sync(self, force, refresh_locations=False, on_token_refreshed=None):
         """Synchronize activities from Strava into the local cache."""
+        if self.client is None:
+            raise RuntimeError("Strava client is not configured")
+
         latest_refresh_token = self.check_access()
         if on_token_refreshed:
             on_token_refreshed(latest_refresh_token)
@@ -303,14 +315,11 @@ class Generator:
                     filters = {"before": datetime.datetime.now(datetime.UTC)}
 
             for activity in self.client.get_activities(**filters):
-                if self.only_run and activity.type != "Run":
+                if self.only_run and strava_activity_type(activity) != "Run":
                     continue
 
                 activity_id = int(activity.id)
                 seen_activity_ids.add(activity_id)
-                activity.elevation_gain = getattr(
-                    activity, "total_elevation_gain", None
-                )
                 created = update_or_create_activity(
                     self.session,
                     activity,
@@ -335,26 +344,6 @@ class Generator:
             query = query.filter(Activity.type == "Run")
 
         activities = query.order_by(Activity.start_date_local)
-        activity_list = []
-
-        streak = 0
-        last_date = None
-        for activity in activities:
-            date = datetime.datetime.strptime(
-                activity.start_date_local,
-                "%Y-%m-%d %H:%M:%S",  # type: ignore
-            ).date()
-            if last_date is None:
-                streak = 1
-            elif date == last_date:
-                pass
-            elif date == last_date + datetime.timedelta(days=1):
-                streak += 1
-            else:
-                assert date > last_date
-                streak = 1
-            activity.streak = streak  # type: ignore
-            last_date = date
-            activity_list.append(sanitize_activity_for_public(activity.to_dict()))
-
-        return activity_list
+        return [
+            sanitize_activity_for_public(activity.to_dict()) for activity in activities
+        ]

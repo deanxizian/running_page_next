@@ -1,6 +1,6 @@
 import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 
-const RUNNING_LAYER_IDS = new Set(['province', 'countries', 'runs2']);
+const RUNNING_LAYER_IDS = new Set(['province', 'countries', 'run-routes']);
 
 const setBasePaintProperty = (
   map: MapLibreMap,

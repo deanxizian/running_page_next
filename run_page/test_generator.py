@@ -18,26 +18,39 @@ from generator import (
 from generator import db as generator_db
 from generator.db import Activity
 from strava_sync import write_private_text
+from stravalib.model import SummaryActivity
 
 
 def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
-    return SimpleNamespace(
-        id=run_id,
-        name=f"Run {run_id}",
-        distance=10_000,
-        moving_time=timedelta(hours=1),
-        elapsed_time=timedelta(hours=1),
-        type="Run",
-        workout_type=workout_type,
-        start_date="2026-07-20 00:00:00",
-        start_date_local="2026-07-20 08:00:00",
-        location_country="France",
-        start_latlng=None,
-        average_heartrate=150,
-        average_speed=average_speed,
-        total_elevation_gain=30,
-        map=SimpleNamespace(summary_polyline=""),
+    return SummaryActivity.model_validate(
+        {
+            "id": run_id,
+            "athlete": {"id": 79546855, "id_str": "79546855"},
+            "name": f"Run {run_id}",
+            "distance": 10_000,
+            "moving_time": 3600,
+            "elapsed_time": 3600,
+            "type": "Run",
+            "sport_type": "Run",
+            "workout_type": workout_type,
+            "start_date": "2026-07-20T00:00:00Z",
+            "start_date_local": "2026-07-20T08:00:00Z",
+            "location_country": "France",
+            "start_latlng": None,
+            "average_heartrate": 150,
+            "average_speed": average_speed,
+            "total_elevation_gain": 30,
+            "map": {"summary_polyline": ""},
+        }
     )
+
+
+def configure_mock_strava(generator):
+    generator.client_id = "123"
+    generator.client_secret = "secret"
+    generator.refresh_token = "refresh"
+    generator.client = MagicMock()
+    return generator.client
 
 
 def cached_activity(run_id, activity_type="Run", summary_polyline=""):
@@ -164,12 +177,12 @@ class SyncTests(unittest.TestCase):
                 ]
             )
             generator.session.commit()
-            generator.client = MagicMock()
-            generator.client.refresh_access_token.return_value = {
+            client = configure_mock_strava(generator)
+            client.refresh_access_token.return_value = {
                 "access_token": "access",
                 "refresh_token": "rotated",
             }
-            generator.client.get_activities.return_value = [
+            client.get_activities.return_value = [
                 strava_activity(2),
                 strava_activity(4, workout_type=1),
             ]
@@ -188,11 +201,22 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(remaining_ids, {2, 3, 4})
             self.assertEqual(generator.session.get(Activity, 4).average_heartrate, 150)
             self.assertEqual(generator.session.get(Activity, 4).workout_type, 1)
+            self.assertEqual(
+                generator.session.get(Activity, 4).moving_time,
+                timedelta(hours=1),
+            )
+            self.assertEqual(generator.session.get(Activity, 4).type, "Run")
+            client.refresh_access_token.assert_called_once_with(
+                client_id=123,
+                client_secret="secret",
+                refresh_token="refresh",
+            )
             exported_race = next(
                 activity for activity in generator.load() if activity["run_id"] == 4
             )
             self.assertEqual(exported_race["workout_type"], 1)
-            self.assertNotIn("subtype", exported_race)
+            for private_cache_field in ("type", "start_date", "streak", "subtype"):
+                self.assertNotIn(private_cache_field, exported_race)
 
     def test_incremental_sync_does_not_reconcile_cached_runs(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -200,12 +224,12 @@ class SyncTests(unittest.TestCase):
             generator.only_run = True
             generator.session.add_all([cached_activity(1), cached_activity(2)])
             generator.session.commit()
-            generator.client = MagicMock()
-            generator.client.refresh_access_token.return_value = {
+            client = configure_mock_strava(generator)
+            client.refresh_access_token.return_value = {
                 "access_token": "access",
                 "refresh_token": "rotated",
             }
-            generator.client.get_activities.return_value = [strava_activity(2)]
+            client.get_activities.return_value = [strava_activity(2)]
 
             generator.sync(force=False)
 
@@ -274,12 +298,12 @@ class SyncTests(unittest.TestCase):
             generator.only_run = True
             generator.session.add(cached_activity(1))
             generator.session.commit()
-            generator.client = MagicMock()
-            generator.client.refresh_access_token.return_value = {
+            client = configure_mock_strava(generator)
+            client.refresh_access_token.return_value = {
                 "access_token": "access",
                 "refresh_token": "rotated",
             }
-            generator.client.get_activities.return_value = [
+            client.get_activities.return_value = [
                 strava_activity(2),
                 strava_activity(3, average_speed=None),
             ]

@@ -4,3 +4,4 @@ coverage
 test-results
 run_page/data.db
 src/static/activities.json
+src/static/world_countries.zh.json

@@ -38,9 +38,12 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => {
 };
 
 const geoJsonForMap = async (): Promise<FeatureCollection<RPGeometry>> => {
+  // Derived from @surbowl/world-geo-json-zh 2.1.5 (Unlicense). The local
+  // overview keeps the Chinese country names and rounds coordinates to 4
+  // decimals, which is below the visible precision of the world-scale layer.
   const [{ chinaGeojson }, worldGeoJson] = await Promise.all([
     import('@/static/run_countries'),
-    import('@surbowl/world-geo-json-zh/world.zh.json'),
+    import('@/static/world_countries.zh.json'),
   ]);
 
   return {

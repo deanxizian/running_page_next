@@ -20,9 +20,7 @@ const activity = (
     name: 'Run',
     distance,
     moving_time: '1:00:00',
-    type: 'Run',
     workout_type: null,
-    start_date: startDateLocal,
     start_date_local: startDateLocal,
     ...dateFields,
     location_country: '',
@@ -30,7 +28,6 @@ const activity = (
     average_heartrate: null,
     elevation_gain: 0,
     average_speed: 2.777,
-    streak: 1,
   };
 };
 

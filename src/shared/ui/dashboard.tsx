@@ -138,12 +138,7 @@ const MetricCard = ({
 };
 
 type MetricIconName =
-  | 'bolt'
-  | 'clock'
-  | 'target'
-  | 'calendar'
-  | 'trendUp'
-  | 'trendDown';
+  'bolt' | 'clock' | 'target' | 'calendar' | 'trendUp' | 'trendDown';
 
 const MetricIcon = ({ icon }: { icon: MetricIconName }) => {
   const commonProps = {

@@ -16,9 +16,7 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
     name: 'Morning Run',
     distance: 10000,
     moving_time: '1:00:00',
-    type: 'Run',
     workout_type: null,
-    start_date: '2026-05-01 00:00:00',
     start_date_local: startDateLocal,
     ...dateFields,
     location_country: '',
@@ -26,7 +24,6 @@ const activity = (overrides: Partial<Activity> = {}): Activity => {
     average_heartrate: null,
     elevation_gain: 0,
     average_speed: 2.777,
-    streak: 1,
     ...overrides,
   };
 };

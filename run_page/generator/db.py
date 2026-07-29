@@ -28,14 +28,12 @@ g = Nominatim(user_agent=NOMINATIM_USER_AGENT)
 _geocode_cache = {}
 
 
-ACTIVITY_KEYS = [
+PUBLIC_ACTIVITY_KEYS = [
     "run_id",
     "name",
     "distance",
     "moving_time",
-    "type",
     "workout_type",
-    "start_date",
     "start_date_local",
     "location_country",
     "summary_polyline",
@@ -77,11 +75,10 @@ class Activity(Base):
     average_heartrate = Column(Float)
     average_speed = Column(Float)
     elevation_gain = Column(Float)
-    streak = None
 
     def to_dict(self):
         out = {}
-        for key in ACTIVITY_KEYS:
+        for key in PUBLIC_ACTIVITY_KEYS:
             attr = getattr(self, key)
             if key == "weather_temperature" and attr is None:
                 continue
@@ -91,9 +88,6 @@ class Activity(Base):
                 out[key] = attr
 
         out.update(activity_date_fields(out["start_date_local"]))
-
-        if self.streak:
-            out["streak"] = self.streak
 
         return out
 
@@ -144,43 +138,80 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
     return location_country
 
 
+def _model_value(value):
+    return getattr(value, "root", value)
+
+
+def _text_value(value):
+    value = _model_value(value)
+    return str(value) if value is not None else ""
+
+
+def _duration_value(value):
+    if value is None or isinstance(value, datetime.timedelta):
+        return value
+    return datetime.timedelta(seconds=float(value))
+
+
+def _datetime_value(value, *, local=False):
+    if isinstance(value, datetime.datetime):
+        if local:
+            return value.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
+        return str(value)
+    return str(value)
+
+
+def strava_activity_type(run_activity):
+    return _text_value(getattr(run_activity, "type", ""))
+
+
+def _activity_fields(run_activity):
+    map_data = getattr(run_activity, "map", None)
+    average_heartrate = getattr(run_activity, "average_heartrate", None)
+    workout_type = getattr(run_activity, "workout_type", None)
+
+    current_elevation_gain = getattr(run_activity, "total_elevation_gain", None)
+    if current_elevation_gain is None:
+        current_elevation_gain = getattr(run_activity, "elevation_gain", None)
+
+    return {
+        "name": run_activity.name,
+        "distance": float(run_activity.distance),
+        "moving_time": _duration_value(run_activity.moving_time),
+        "elapsed_time": _duration_value(run_activity.elapsed_time),
+        "type": strava_activity_type(run_activity),
+        "workout_type": int(workout_type) if workout_type is not None else None,
+        "start_date": _datetime_value(run_activity.start_date),
+        "start_date_local": _datetime_value(
+            run_activity.start_date_local,
+            local=True,
+        ),
+        "average_heartrate": (
+            float(average_heartrate) if average_heartrate is not None else None
+        ),
+        "average_speed": float(run_activity.average_speed),
+        "elevation_gain": (
+            float(current_elevation_gain) if current_elevation_gain is not None else 0.0
+        ),
+        "summary_polyline": (
+            getattr(map_data, "summary_polyline", None) if map_data else ""
+        )
+        or "",
+    }
+
+
 def update_or_create_activity(session, run_activity, refresh_locations=False):
     created = False
     activity = session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
-    workout_type = getattr(run_activity, "workout_type", None)
-
-    current_elevation_gain = 0.0
-    if (
-        hasattr(run_activity, "total_elevation_gain")
-        and run_activity.total_elevation_gain is not None
-    ):
-        current_elevation_gain = float(run_activity.total_elevation_gain)
-    elif (
-        hasattr(run_activity, "elevation_gain")
-        and run_activity.elevation_gain is not None
-    ):
-        current_elevation_gain = float(run_activity.elevation_gain)
+    activity_fields = _activity_fields(run_activity)
 
     if not activity:
         location_country = resolve_location_country(run_activity)
 
         activity = Activity(
             run_id=run_activity.id,
-            name=run_activity.name,
-            distance=run_activity.distance,
-            moving_time=run_activity.moving_time,
-            elapsed_time=run_activity.elapsed_time,
-            type=run_activity.type,
-            workout_type=workout_type,
-            start_date=run_activity.start_date,
-            start_date_local=run_activity.start_date_local,
             location_country=location_country,
-            average_heartrate=run_activity.average_heartrate,
-            average_speed=float(run_activity.average_speed),
-            elevation_gain=current_elevation_gain,
-            summary_polyline=(
-                run_activity.map and run_activity.map.summary_polyline or ""
-            ),
+            **activity_fields,
         )
         session.add(activity)
         created = True
@@ -194,21 +225,9 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
             )
         else:
             location_country = current_location
-        activity.name = run_activity.name
-        activity.distance = float(run_activity.distance)
-        activity.moving_time = run_activity.moving_time
-        activity.elapsed_time = run_activity.elapsed_time
-        activity.type = run_activity.type
-        activity.workout_type = workout_type
-        activity.start_date = run_activity.start_date
-        activity.start_date_local = run_activity.start_date_local
         activity.location_country = location_country
-        activity.average_heartrate = run_activity.average_heartrate
-        activity.average_speed = float(run_activity.average_speed)
-        activity.elevation_gain = current_elevation_gain
-        activity.summary_polyline = (
-            run_activity.map and run_activity.map.summary_polyline or ""
-        )
+        for field_name, field_value in activity_fields.items():
+            setattr(activity, field_name, field_value)
 
     return created
 

@@ -12,9 +12,7 @@ REQUIRED_FIELDS = {
     "name": str,
     "distance": (int, float),
     "moving_time": str,
-    "type": str,
     "workout_type": (int, type(None)),
-    "start_date": str,
     "start_date_local": str,
     "start_time_local_ms": int,
     "month_key": str,
@@ -22,7 +20,6 @@ REQUIRED_FIELDS = {
     "average_speed": (int, float),
     "average_heartrate": (int, float, type(None)),
     "elevation_gain": (int, float, type(None)),
-    "streak": int,
 }
 
 OPTIONAL_FIELDS = {
@@ -30,6 +27,8 @@ OPTIONAL_FIELDS = {
     "summary_polyline": (str, type(None)),
     "weather_temperature": (int, float, type(None)),
 }
+
+LEGACY_PUBLIC_FIELDS = {"type", "start_date", "streak", "subtype"}
 
 
 def is_finite_number(value):
@@ -65,6 +64,11 @@ def local_start_fields(start_date_local):
 def validate_activity(activity, index):
     if not isinstance(activity, dict):
         raise ValueError(f"activity[{index}] must be an object")
+
+    legacy_fields = LEGACY_PUBLIC_FIELDS.intersection(activity)
+    if legacy_fields:
+        fields = ", ".join(sorted(legacy_fields))
+        raise ValueError(f"activity[{index}] contains legacy public fields: {fields}")
 
     for field, expected_type in REQUIRED_FIELDS.items():
         if field not in activity:

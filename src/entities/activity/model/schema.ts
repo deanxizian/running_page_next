@@ -5,15 +5,12 @@ const REQUIRED_ACTIVITY_FIELDS = [
   'name',
   'distance',
   'moving_time',
-  'type',
   'workout_type',
-  'start_date',
   'start_date_local',
   'start_time_local_ms',
   'month_key',
   'year_key',
   'average_speed',
-  'streak',
 ] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -97,9 +94,7 @@ const isActivity = (value: unknown): value is Activity => {
     isString(value.name) &&
     isNumber(value.distance) &&
     isString(value.moving_time) &&
-    isString(value.type) &&
     isNullableInteger(value.workout_type) &&
-    isString(value.start_date) &&
     isString(value.start_date_local) &&
     isNumber(value.start_time_local_ms) &&
     isString(value.month_key) &&
@@ -110,8 +105,7 @@ const isActivity = (value: unknown): value is Activity => {
     isOptionalNullableNumber(value.weather_temperature) &&
     isNullableNumber(value.average_heartrate) &&
     isNullableNumber(value.elevation_gain) &&
-    isNumber(value.average_speed) &&
-    isNumber(value.streak)
+    isNumber(value.average_speed)
   );
 };
 

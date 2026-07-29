@@ -1,5 +1,5 @@
 import type { Activity } from '../model/types';
-import { chinaCities } from '@/static/city';
+import { CHINA_CITY_NAMES } from '@/static/city';
 import { MUNICIPALITY_CITIES_ARR } from '@/shared/config/geo';
 
 const extractCities = (str: string): string[] => {
@@ -37,7 +37,6 @@ const extractCoordinate = (str: string): [number, number] | null => {
   return null;
 };
 
-const cities = chinaCities.map((c) => c.name);
 const locationCache = new Map<number, ReturnType<typeof locationForRun>>();
 
 const locationForRun = (
@@ -61,7 +60,7 @@ const locationForRun = (
     const provinceMatch = location.match(/[\u4e00-\u9fa5]{2,}(省|自治区)/);
 
     if (cityMatch) {
-      city = cities.find((value) => cityMatch.includes(value)) ?? '';
+      city = cityMatch.find((value) => CHINA_CITY_NAMES.has(value)) ?? '';
     }
 
     if (provinceMatch) {

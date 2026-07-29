@@ -9,9 +9,7 @@ def valid_activity():
         "name": "Morning Run",
         "distance": 10_000,
         "moving_time": "1:00:00",
-        "type": "Run",
         "workout_type": 1,
-        "start_date": "2026-07-20 00:00:00",
         "start_date_local": "2026-07-20 08:00:00",
         "start_time_local_ms": 1_784_534_400_000,
         "month_key": "2026-07",
@@ -19,7 +17,6 @@ def valid_activity():
         "average_speed": 2.8,
         "average_heartrate": None,
         "elevation_gain": 30,
-        "streak": 1,
         "location_country": "上海市, 中国",
         "summary_polyline": "",
         "weather_temperature": 20.5,
@@ -47,7 +44,6 @@ class ValidateActivityTests(unittest.TestCase):
             "average_speed",
             "average_heartrate",
             "elevation_gain",
-            "streak",
             "workout_type",
             "weather_temperature",
         ):
@@ -77,6 +73,14 @@ class ValidateActivityTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "missing required field workout_type"):
             validate_activity(activity, 0)
+
+    def test_rejects_legacy_public_fields(self):
+        for field in ("type", "start_date", "streak", "subtype"):
+            with self.subTest(field=field):
+                activity = valid_activity()
+                activity[field] = "legacy"
+                with self.assertRaisesRegex(ValueError, "legacy public fields"):
+                    validate_activity(activity, 0)
 
     def test_rejects_precise_public_locations(self):
         activity = valid_activity()

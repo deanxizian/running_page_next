@@ -133,7 +133,7 @@ const RunMap = ({
             filter={filterCountries}
           />
           <Layer
-            id="runs2"
+            id="run-routes"
             type="line"
             paint={runPaintFor(isBigMap, isSingleRun)}
             layout={routeLineLayout}

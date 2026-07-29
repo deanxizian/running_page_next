@@ -5,9 +5,7 @@ export interface Activity {
   name: string;
   distance: number;
   moving_time: string;
-  type: string;
   workout_type: number | null;
-  start_date: string;
   start_date_local: string;
   /**
    * Timestamp derived from local wall-clock time.
@@ -22,7 +20,6 @@ export interface Activity {
   average_heartrate?: number | null;
   elevation_gain: number | null;
   average_speed: number;
-  streak: number;
 }
 
 export interface IViewState {
