@@ -3,6 +3,10 @@ import type { Activity } from './model/types';
 import { localStartFieldsFor } from './model/schema';
 import { parseActivities } from './data/parseActivities';
 import {
+  attachActivityRoutes,
+  parseActivityRoutes,
+} from './data/activityRoutes';
+import {
   buildActivitySnapshot,
   standardizeCountryName,
 } from './data/buildActivitySnapshot';
@@ -15,6 +19,7 @@ import {
 import { formatDuration, formatPace } from './lib/format';
 import { groupActivities } from './lib/group';
 import { isRaceEventRun } from './lib/event';
+import { locationForRun } from './lib/location';
 import { geoJsonForRuns, getBoundsForRuns, pathForRun } from './lib/route';
 
 const activity = (overrides: Partial<Activity> = {}): Activity => {
@@ -124,6 +129,19 @@ describe('activity grouping and snapshot', () => {
 
   it('standardizes known country names', () => {
     expect(standardizeCountryName('美利坚合众国')).toBe('美国');
+    expect(standardizeCountryName('United States')).toBe('美国');
+    expect(standardizeCountryName('France')).toBe('法国');
+  });
+
+  it('extracts English country names from coarse public locations', () => {
+    expect(
+      locationForRun(
+        activity({
+          run_id: 500,
+          location_country: 'Massachusetts, United States',
+        })
+      ).country
+    ).toBe('United States');
   });
 });
 
@@ -147,6 +165,24 @@ describe('activity formatting and event helpers', () => {
 });
 
 describe('activity route helpers', () => {
+  it('attaches validated route data by activity id', () => {
+    const routes = parseActivityRoutes({ 1: '_ibE_seK?_ibE' });
+    const runWithoutRoute = activity({
+      run_id: 2,
+      summary_polyline: undefined,
+    });
+    const [run, unchangedRun] = attachActivityRoutes(
+      [activity(), runWithoutRoute],
+      routes
+    );
+
+    expect(run.summary_polyline).toBe('_ibE_seK?_ibE');
+    expect(unchangedRun).toBe(runWithoutRoute);
+    expect(() => parseActivityRoutes({ invalid: '' })).toThrow(
+      'Invalid activity route for invalid.'
+    );
+  });
+
   it('returns the default map bounds when no route is available', () => {
     expect(getBoundsForRuns([activity()])).toEqual({
       longitude: 20,

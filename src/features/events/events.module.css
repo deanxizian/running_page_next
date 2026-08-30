@@ -214,6 +214,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-backdrop-filter: blur(18px) saturate(1.18);
   backdrop-filter: blur(18px) saturate(1.18);
   animation: modalBackdropIn 0.38s ease forwards;
@@ -320,10 +322,15 @@
 .eventModal {
   box-sizing: border-box;
   width: min(100%, 668px);
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   animation: eventModalIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
@@ -333,6 +340,7 @@
 
 .eventModalMap {
   height: 260px;
+  flex: 0 0 260px;
   margin-top: 8px;
   overflow: hidden;
   border-radius: 16px;
@@ -436,6 +444,8 @@
   }
 
   .eventModal {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
     padding: 20px;
   }
 

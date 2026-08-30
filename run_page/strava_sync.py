@@ -1,11 +1,16 @@
 import argparse
-import json
 import logging
 import os
 from pathlib import Path
 
-from config import JSON_FILE, SQL_FILE
+from config import (
+    ACTIVITY_ROUTES_JSON_FILE,
+    EVENT_ROUTES_JSON_FILE,
+    JSON_FILE,
+    SQL_FILE,
+)
 from generator import Generator
+from public_data import split_public_activities, write_json
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
@@ -55,8 +60,12 @@ def run_strava_sync(
 
     generator.enrich_race_weather()
     activities_list = generator.load()
-    with open(JSON_FILE, "w") as f:
-        json.dump(activities_list, f)
+    activity_metadata, activity_routes, event_routes = split_public_activities(
+        activities_list
+    )
+    write_json(JSON_FILE, activity_metadata)
+    write_json(ACTIVITY_ROUTES_JSON_FILE, activity_routes)
+    write_json(EVENT_ROUTES_JSON_FILE, event_routes)
 
     return latest_refresh_token
 

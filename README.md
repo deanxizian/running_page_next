@@ -47,10 +47,10 @@ run_page       Strava sync and data validation
 ## Data
 
 ```text
-Strava API -> run_page/data.db -> src/static/activities.json -> Vite build
+Strava API -> run_page/data.db -> public metadata and route JSON -> Vite build
 ```
 
-`run_page/data.db` is a local cache and is not committed. `src/static/activities.json` is committed and should be treated as public data.
+`run_page/data.db` is a local cache and is not committed. Public metadata, activity routes, and race routes are committed under `src/static` and should be treated as public data. GitHub Actions persists only an encrypted copy of the raw cache.
 
 ## Configuration
 

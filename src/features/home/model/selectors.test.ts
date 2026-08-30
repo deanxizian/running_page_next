@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { Activity } from '@/entities/activity/model/types';
 import { localStartFieldsFor } from '@/entities/activity/model/schema';
 import { groupActivities } from '@/entities/activity/lib/group';
-import { chartYearsFor, currentPeriodRunsFor, metricsFor } from './selectors';
+import {
+  chartYearsFor,
+  currentPeriodRunsFor,
+  metricsFor,
+  monthlyChartYearFor,
+} from './selectors';
 
 const activity = (
   runId: number,
@@ -72,5 +77,9 @@ describe('home selectors', () => {
       olderMonthlyChartYear: null,
       newerMonthlyChartYear: null,
     });
+  });
+
+  it('uses the current year for an empty activity dataset', () => {
+    expect(monthlyChartYearFor('', '', '', '2026')).toBe('2026');
   });
 });

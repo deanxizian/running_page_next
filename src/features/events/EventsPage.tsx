@@ -1,15 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDashboardData } from '@/app/DashboardLayout';
+import {
+  attachActivityRoutes,
+  parseActivityRoutes,
+} from '@/entities/activity/data/activityRoutes';
 import { preloadRunMap } from '@/shared/map/LazyRunMap';
 import EventList from './components/EventList';
 import EventModal from './components/EventModal';
 import { useEventsPage } from './model/useEventsPage';
 import sharedStyles from '@/shared/ui/dashboard.module.css';
 import styles from '@/features/events/events.module.css';
+import rawEventRoutes from '@/static/event_routes.json';
+
+const eventRoutes = parseActivityRoutes(rawEventRoutes);
 
 const EventsPage = () => {
   const { activitySnapshot } = useDashboardData();
-  const eventsPage = useEventsPage(activitySnapshot.sortedActivities);
+  const activitiesWithEventRoutes = useMemo(
+    () => attachActivityRoutes(activitySnapshot.sortedActivities, eventRoutes),
+    [activitySnapshot.sortedActivities]
+  );
+  const eventsPage = useEventsPage(activitiesWithEventRoutes);
 
   useEffect(() => {
     preloadRunMap();

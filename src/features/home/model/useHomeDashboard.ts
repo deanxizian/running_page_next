@@ -138,7 +138,8 @@ const useHomeDashboard = ({
   const monthlyChartYear = monthlyChartYearFor(
     state.calendarMonth,
     latestSelectableMonth,
-    thisYear
+    thisYear,
+    todayDateKey.slice(0, 4)
   );
   const monthlyBars = useMemo(
     () =>

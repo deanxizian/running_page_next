@@ -1,6 +1,7 @@
 import unittest
 
-from validate_activities import validate_activity
+import polyline
+from validate_activities import validate_activity, validate_public_data
 
 
 def valid_activity():
@@ -18,7 +19,6 @@ def valid_activity():
         "average_heartrate": None,
         "elevation_gain": 30,
         "location_country": "上海市, 中国",
-        "summary_polyline": "",
         "weather_temperature": 20.5,
     }
 
@@ -82,12 +82,49 @@ class ValidateActivityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "legacy public fields"):
                     validate_activity(activity, 0)
 
+    def test_rejects_routes_in_activity_metadata(self):
+        activity = valid_activity()
+        activity["summary_polyline"] = "encoded-route"
+
+        with self.assertRaisesRegex(ValueError, "route fields reserved"):
+            validate_activity(activity, 0)
+
     def test_rejects_precise_public_locations(self):
         activity = valid_activity()
         activity["location_country"] = "广富林路, 上海市, 201620, 中国"
 
         with self.assertRaisesRegex(ValueError, "location_country is too precise"):
             validate_activity(activity, 0)
+
+    def test_validates_matching_activity_and_event_route_maps(self):
+        activity = valid_activity()
+        encoded_route = polyline.encode([(31.2, 121.5), (31.21, 121.51)])
+
+        validate_public_data(
+            [activity],
+            {"1": encoded_route},
+            {"1": encoded_route},
+        )
+
+    def test_rejects_unknown_or_mismatched_route_maps(self):
+        activity = valid_activity()
+        encoded_route = polyline.encode([(31.2, 121.5), (31.21, 121.51)])
+
+        with self.assertRaisesRegex(ValueError, "unknown activity"):
+            validate_public_data(
+                [activity],
+                {"2": encoded_route},
+                {},
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, "event routes do not match routed race"
+        ):
+            validate_public_data(
+                [activity],
+                {"1": encoded_route},
+                {},
+            )
 
 
 if __name__ == "__main__":

@@ -19,8 +19,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "data:clean": "rm -f run_page/data.db src/static/activities.json",
-    "data:validate": "python3 run_page/validate_activities.py src/static/activities.json",
+    "data:clean": "rm -f run_page/data.db run_page/data.db.enc src/static/activities.json src/static/activity_routes.json src/static/event_routes.json",
+    "data:validate": "python3 run_page/validate_activities.py src/static/activities.json src/static/activity_routes.json src/static/event_routes.json",
     "data:sync:strava": "python3 run_page/strava_sync.py \"$STRAVA_CLIENT_ID\" \"$STRAVA_CLIENT_SECRET\" \"$STRAVA_CLIENT_REFRESH_TOKEN\" --only-run",
     "data:sync:strava:refresh-locations": "python3 run_page/strava_sync.py \"$STRAVA_CLIENT_ID\" \"$STRAVA_CLIENT_SECRET\" \"$STRAVA_CLIENT_REFRESH_TOKEN\" --only-run --force --refresh-locations",
     "build": "vite build",
@@ -34,7 +34,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
-    "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm test && pnpm build",
+    "check": "pnpm typecheck && pnpm lint && pnpm format && pnpm data:validate && pnpm test && pnpm build",
     "check:ci": "pnpm check && pnpm python:check && pnpm python:test && pnpm test:e2e",
     "typecheck": "tsc --noEmit",
     "serve": "vite preview"

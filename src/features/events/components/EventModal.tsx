@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import RunMap from '@/shared/map/LazyRunMap';
 import {
   DIST_UNIT,
@@ -33,6 +34,7 @@ const EventModal = ({
   onClose: () => void;
   onIgnoreViewStateUpdate: () => void;
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const eventMetrics = [
     {
       label: 'Distance:',
@@ -68,6 +70,66 @@ const EventModal = ({
     },
   ];
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return undefined;
+    }
+
+    const previouslyFocusedElement =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const focusDialogFrame = window.requestAnimationFrame(() => {
+      dialog.focus({ preventScroll: true });
+    });
+    const keepFocusInDialog = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialog.contains(event.target)) {
+        dialog.focus({ preventScroll: true });
+      }
+    };
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => element.getClientRects().length > 0);
+
+      event.preventDefault();
+      if (!focusableElements.length) {
+        dialog.focus({ preventScroll: true });
+        return;
+      }
+
+      const activeIndex = focusableElements.findIndex(
+        (element) => element === document.activeElement
+      );
+      const nextIndex = event.shiftKey
+        ? activeIndex <= 0
+          ? focusableElements.length - 1
+          : activeIndex - 1
+        : activeIndex === -1 || activeIndex === focusableElements.length - 1
+          ? 0
+          : activeIndex + 1;
+
+      focusableElements[nextIndex].focus({ preventScroll: true });
+    };
+
+    document.addEventListener('focusin', keepFocusInDialog);
+    document.addEventListener('keydown', trapFocus);
+
+    return () => {
+      window.cancelAnimationFrame(focusDialogFrame);
+      document.removeEventListener('focusin', keepFocusInDialog);
+      document.removeEventListener('keydown', trapFocus);
+      previouslyFocusedElement?.focus({ preventScroll: true });
+    };
+  }, []);
+
   return (
     <div
       className={`${styles.modalBackdrop} ${
@@ -78,15 +140,18 @@ const EventModal = ({
         type="button"
         className={styles.modalBackdropDismiss}
         aria-label="Close event details"
+        tabIndex={-1}
         onClick={onClose}
       />
       <div
+        ref={dialogRef}
         className={`${styles.eventModal} ${
           vm.isClosing ? styles.eventModalClosing : ''
         }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={vm.titleId}
+        tabIndex={-1}
       >
         <small>{vm.selectedEvent.start_date_local.slice(0, 10)}</small>
         <strong id={vm.titleId}>{activityTitleForRun(vm.selectedEvent)}</strong>
