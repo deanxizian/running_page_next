@@ -21,26 +21,34 @@ from strava_sync import write_private_text
 from stravalib.model import SummaryActivity
 
 
-def strava_activity(run_id, *, average_speed=2.8, workout_type=None):
+def strava_activity(
+    run_id,
+    *,
+    average_speed=2.8,
+    workout_type=None,
+    summary_polyline="",
+    moving_time=3600,
+    start_date_local="2026-07-20T08:00:00Z",
+):
     return SummaryActivity.model_validate(
         {
             "id": run_id,
             "athlete": {"id": 79546855, "id_str": "79546855"},
             "name": f"Run {run_id}",
             "distance": 10_000,
-            "moving_time": 3600,
-            "elapsed_time": 3600,
+            "moving_time": moving_time,
+            "elapsed_time": moving_time,
             "type": "Run",
             "sport_type": "Run",
             "workout_type": workout_type,
             "start_date": "2026-07-20T00:00:00Z",
-            "start_date_local": "2026-07-20T08:00:00Z",
+            "start_date_local": start_date_local,
             "location_country": "France",
             "start_latlng": None,
             "average_heartrate": 150,
             "average_speed": average_speed,
             "total_elevation_gain": 30,
-            "map": {"summary_polyline": ""},
+            "map": {"summary_polyline": summary_polyline},
         }
     )
 
@@ -292,6 +300,37 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(exported[2]["weather_temperature"], 18.2)
             self.assertNotIn("weather_temperature", exported[3])
 
+    def test_changed_weather_inputs_invalidate_cached_race_temperature(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            generator = Generator(os.path.join(temporary_directory, "data.db"))
+            old_route = polyline.encode([(31.0, 121.0), (31.01, 121.01)])
+            new_route = polyline.encode([(22.5, 114.0), (22.51, 114.01)])
+            race = cached_activity(1, summary_polyline=old_route)
+            race.workout_type = 1
+            race.weather_temperature = 18.2
+            generator.session.add(race)
+            generator.session.commit()
+
+            generator_db.update_or_create_activity(
+                generator.session,
+                strava_activity(
+                    1,
+                    workout_type=1,
+                    summary_polyline=new_route,
+                ),
+            )
+
+            self.assertIsNone(race.weather_temperature)
+            with patch(
+                "generator.temperature_for_activity",
+                return_value=24.6,
+            ) as lookup:
+                updated_count = generator.enrich_race_weather()
+
+            self.assertEqual(updated_count, 1)
+            lookup.assert_called_once_with(race)
+            self.assertEqual(race.weather_temperature, 24.6)
+
     def test_sync_failure_rolls_back_updates_and_skips_reconciliation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             generator = Generator(os.path.join(temporary_directory, "data.db"))
@@ -332,7 +371,7 @@ class SyncTests(unittest.TestCase):
             patch.object(generator_db.g, "reverse", reverse),
             patch.object(generator_db.time, "sleep") as sleep,
         ):
-            generator_db._geocode_cache.clear()
+            generator_db.reset_geocode_state()
             first = generator_db.resolve_location_country(run)
             second = generator_db.resolve_location_country(run)
 
@@ -340,6 +379,76 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(second, first)
         reverse.assert_called_once()
         sleep.assert_called_once_with(1)
+
+    def test_reverse_geocode_failures_are_cached_and_stop_further_requests(self):
+        first_run = SimpleNamespace(
+            location_country="China",
+            start_latlng=SimpleNamespace(lat=31.2, lon=121.5),
+        )
+        second_run = SimpleNamespace(
+            location_country="China",
+            start_latlng=SimpleNamespace(lat=22.5, lon=114.0),
+        )
+        reverse = MagicMock(side_effect=RuntimeError("service unavailable"))
+
+        with (
+            patch.object(generator_db.g, "reverse", reverse),
+            patch.object(generator_db.time, "sleep") as sleep,
+        ):
+            generator_db.reset_geocode_state()
+            first = generator_db.resolve_location_country(first_run)
+            repeated = generator_db.resolve_location_country(first_run)
+            second = generator_db.resolve_location_country(second_run)
+
+        self.assertEqual(first, "China")
+        self.assertEqual(repeated, "China")
+        self.assertEqual(second, "China")
+        self.assertEqual(reverse.call_count, 2)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_forced_location_refresh_replaces_or_preserves_cached_detail(self):
+        run = SimpleNamespace(
+            location_country="",
+            start_latlng=SimpleNamespace(lat=31.2, lon=121.5),
+        )
+
+        with (
+            patch.object(
+                generator_db.g,
+                "reverse",
+                return_value="松江区, 上海市, 中国",
+            ) as reverse,
+            patch.object(generator_db.time, "sleep"),
+        ):
+            generator_db.reset_geocode_state()
+            refreshed = generator_db.resolve_location_country(
+                run,
+                "徐汇区, 上海市, 中国",
+                force_refresh=True,
+            )
+
+        self.assertEqual(refreshed, "松江区, 上海市, 中国")
+        reverse.assert_called_once()
+
+        with (
+            patch.object(
+                generator_db.g,
+                "reverse",
+                side_effect=RuntimeError("service unavailable"),
+            ),
+            patch.object(generator_db.time, "sleep"),
+        ):
+            generator_db.reset_geocode_state()
+            preserved = generator_db.resolve_location_country(
+                SimpleNamespace(
+                    location_country="China",
+                    start_latlng=SimpleNamespace(lat=31.2, lon=121.5),
+                ),
+                "徐汇区, 上海市, 中国",
+                force_refresh=True,
+            )
+
+        self.assertEqual(preserved, "徐汇区, 上海市, 中国")
 
     def test_rotated_token_file_is_owner_only(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

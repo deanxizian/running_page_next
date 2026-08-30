@@ -22,7 +22,13 @@ export default defineConfig({
       output: {
         manualChunks: (id: string) => {
           if (id.endsWith('/src/static/activities.json')) {
-            return 'activities';
+            return 'activity-metadata';
+          }
+          if (id.endsWith('/src/static/activity_routes.json')) {
+            return 'activity-routes';
+          }
+          if (id.endsWith('/src/static/event_routes.json')) {
+            return 'event-routes';
           }
         },
       },

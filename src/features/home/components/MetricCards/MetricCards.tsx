@@ -1,34 +1,10 @@
 import { DIST_UNIT, formatDurationShort } from '@/entities/activity/lib/format';
 import { totalSeconds } from '@/entities/activity/lib/stats';
+import { lastRunTextFor } from '@/features/home/lib/lastRun';
 import { MONTH_GOAL, YEAR_GOAL } from '@/shared/lib/dashboard';
 import type { HomeMetricsViewModel } from '../../model/types';
 import { MetricCard } from '@/shared/ui/dashboard';
 import styles from '@/shared/ui/dashboard.module.css';
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-const daysAgoFromLocalDate = (localDate: string) => {
-  const [year, month, day] = localDate.slice(0, 10).split('-').map(Number);
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const runDateUtc = Date.UTC(year, month - 1, day);
-
-  return Math.max(0, Math.round((todayUtc - runDateUtc) / DAY_IN_MS));
-};
-
-const lastRunTextFor = (localDate: string) => {
-  const daysAgo = daysAgoFromLocalDate(localDate);
-
-  if (daysAgo === 0) {
-    return 'last run today';
-  }
-
-  if (daysAgo === 1) {
-    return 'last run 1 day ago';
-  }
-
-  return `last run ${daysAgo} days ago`;
-};
 
 const latestRunFooterFor = (vm: HomeMetricsViewModel) => {
   if (!vm.latestRun) {

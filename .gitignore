@@ -19,3 +19,4 @@ playwright-report/
 .env
 
 run_page/data.db
+run_page/data.db.enc

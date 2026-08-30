@@ -14,6 +14,7 @@ from sqlalchemy import func
 from .db import (
     Activity,
     init_db,
+    reset_geocode_state,
     strava_activity_type,
     update_or_create_activity,
 )
@@ -212,6 +213,7 @@ def sanitize_activity_for_public(activity):
 class Generator:
     def __init__(self, db_path):
         self.client = None
+        reset_geocode_state()
         self.session = init_db(db_path)
 
         self.client_id = ""

@@ -18,13 +18,52 @@ export type ActivitySnapshot = {
   earliestMonth: string;
 };
 
+let englishToChineseRegionNames: ReadonlyMap<string, string> | null = null;
+
+const regionNames = () => {
+  if (englishToChineseRegionNames) {
+    return englishToChineseRegionNames;
+  }
+
+  const names = new Map<string, string>();
+  try {
+    const englishNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const chineseNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+
+    for (let first = 65; first <= 90; first += 1) {
+      for (let second = 65; second <= 90; second += 1) {
+        const regionCode = String.fromCharCode(first, second);
+        const englishName = englishNames.of(regionCode);
+        const chineseName = chineseNames.of(regionCode);
+
+        if (
+          englishName &&
+          chineseName &&
+          englishName !== regionCode &&
+          chineseName !== regionCode
+        ) {
+          names.set(englishName.toLocaleLowerCase('en'), chineseName);
+        }
+      }
+    }
+  } catch {
+    // Keep the original name on browsers without Intl.DisplayNames.
+  }
+
+  englishToChineseRegionNames = names;
+  return englishToChineseRegionNames;
+};
+
 const standardizeCountryName = (country: string): string => {
   for (const [pattern, standardName] of COUNTRY_STANDARDIZATION) {
     if (country.includes(pattern)) {
       return standardName;
     }
   }
-  return country;
+
+  return (
+    regionNames().get(country.trim().toLocaleLowerCase('en')) ?? country.trim()
+  );
 };
 
 const buildActivitySnapshot = (activities: Activity[]): ActivitySnapshot => {

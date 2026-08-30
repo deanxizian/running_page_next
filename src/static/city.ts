@@ -1,5 +1,7 @@
 export const COUNTRY_STANDARDIZATION = [
   ['美利坚合众国', '美国'],
+  ['United States of America', '美国'],
+  ["People's Republic of China", '中国'],
   ['奧地利', '奥地利'],
 ] as const;
 

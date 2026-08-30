@@ -4,4 +4,6 @@ coverage
 test-results
 run_page/data.db
 src/static/activities.json
+src/static/activity_routes.json
+src/static/event_routes.json
 src/static/world_countries.zh.json

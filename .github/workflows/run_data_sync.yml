@@ -51,11 +51,40 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Restore sync cache
-        uses: actions/cache@v6
+      - name: Restore encrypted sync cache
+        uses: actions/cache/restore@v6
+        with:
+          path: run_page/data.db.enc
+          key: strava-data-encrypted-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            strava-data-encrypted-${{ runner.os }}-${{ github.ref_name }}-
+            strava-data-encrypted-${{ runner.os }}-
+
+      - name: Decrypt sync cache
+        id: decrypt-cache
+        env:
+          SYNC_CACHE_PASSPHRASE: ${{ secrets.STRAVA_CLIENT_SECRET }}
+        run: |
+          echo "restored=false" >> "$GITHUB_OUTPUT"
+          if [ ! -s run_page/data.db.enc ]; then
+            exit 0
+          fi
+          if openssl enc -d -aes-256-cbc -pbkdf2 \
+            -in run_page/data.db.enc \
+            -out run_page/data.db \
+            -pass env:SYNC_CACHE_PASSPHRASE; then
+            echo "restored=true" >> "$GITHUB_OUTPUT"
+          else
+            rm -f run_page/data.db
+            echo "Encrypted sync cache could not be decrypted; rebuilding it."
+          fi
+
+      - name: Restore legacy sync cache for migration
+        if: steps.decrypt-cache.outputs.restored != 'true'
+        uses: actions/cache/restore@v6
         with:
           path: run_page/data.db
-          key: strava-data-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          key: strava-data-legacy-migration-${{ github.run_id }}
           restore-keys: |
             strava-data-${{ runner.os }}-${{ github.ref_name }}-
             strava-data-${{ runner.os }}-
@@ -63,12 +92,25 @@ jobs:
       - name: Check refresh-token persistence access
         env:
           GH_TOKEN: ${{ secrets.STRAVA_TOKEN_ROTATION_PAT }}
+          PREVIOUS_REFRESH_TOKEN: ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
         run: |
           test -n "$GH_TOKEN"
-          gh api "repos/$GITHUB_REPOSITORY/actions/secrets/public-key" >/dev/null
+          test -n "$PREVIOUS_REFRESH_TOKEN"
+          for attempt in 1 2 3 4; do
+            if printf '%s' "$PREVIOUS_REFRESH_TOKEN" |
+              gh secret set STRAVA_CLIENT_REFRESH_TOKEN \
+                --repo "$GITHUB_REPOSITORY"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
 
       - name: Sync running activities from Strava
         env:
+          GH_TOKEN: ${{ secrets.STRAVA_TOKEN_ROTATION_PAT }}
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_CLIENT_REFRESH_TOKEN: ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
@@ -80,53 +122,158 @@ jobs:
           if [ "$REFRESH_LOCATIONS" = "true" ]; then
             sync_args+=(--force --refresh-locations)
           fi
-          sync_args+=(--refresh-token-output "$RUNNER_TEMP/strava_refresh_token")
-          python run_page/strava_sync.py "$STRAVA_CLIENT_ID" "$STRAVA_CLIENT_SECRET" "$STRAVA_CLIENT_REFRESH_TOKEN" "${sync_args[@]}"
+          token_file="$RUNNER_TEMP/strava_refresh_token"
+          sync_args+=(--refresh-token-output "$token_file")
 
-      - name: Persist rotated Strava refresh token
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.STRAVA_TOKEN_ROTATION_PAT }}
-          PREVIOUS_REFRESH_TOKEN: ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
-        run: |
-          if [ ! -s "$RUNNER_TEMP/strava_refresh_token" ]; then
-            exit 0
+          persist_rotated_token() {
+            local sync_pid="$1"
+            local latest_refresh_token
+
+            for _ in {1..120}; do
+              if [ -s "$token_file" ]; then
+                break
+              fi
+              if ! kill -0 "$sync_pid" 2>/dev/null; then
+                echo "Strava sync stopped before producing a refresh token."
+                return 1
+              fi
+              sleep 1
+            done
+
+            if [ ! -s "$token_file" ]; then
+              echo "Timed out waiting for the rotated Strava refresh token."
+              return 1
+            fi
+
+            latest_refresh_token="$(<"$token_file")"
+            if [ "$latest_refresh_token" = "$STRAVA_CLIENT_REFRESH_TOKEN" ]; then
+              return 0
+            fi
+
+            for attempt in 1 2 3 4 5; do
+              if printf '%s' "$latest_refresh_token" |
+                gh secret set STRAVA_CLIENT_REFRESH_TOKEN \
+                  --repo "$GITHUB_REPOSITORY"; then
+                return 0
+              fi
+              if [ "$attempt" -eq 5 ]; then
+                return 1
+              fi
+              sleep $((attempt * 2))
+            done
+          }
+
+          python run_page/strava_sync.py \
+            "$STRAVA_CLIENT_ID" \
+            "$STRAVA_CLIENT_SECRET" \
+            "$STRAVA_CLIENT_REFRESH_TOKEN" \
+            "${sync_args[@]}" &
+          sync_pid=$!
+
+          if ! persist_rotated_token "$sync_pid"; then
+            kill "$sync_pid" 2>/dev/null || true
+            wait "$sync_pid" || true
+            exit 1
           fi
-          latest_refresh_token="$(<"$RUNNER_TEMP/strava_refresh_token")"
-          if [ "$latest_refresh_token" != "$PREVIOUS_REFRESH_TOKEN" ]; then
-            printf '%s' "$latest_refresh_token" |
-              gh secret set STRAVA_CLIENT_REFRESH_TOKEN \
-                --repo "$GITHUB_REPOSITORY"
-          fi
+          wait "$sync_pid"
 
       - name: Validate generated activities
-        run: python run_page/validate_activities.py src/static/activities.json
+        run: |
+          python run_page/validate_activities.py \
+            src/static/activities.json \
+            src/static/activity_routes.json \
+            src/static/event_routes.json
 
-      - name: Upload sync database artifact
-        uses: actions/upload-artifact@v7
+      - name: Encrypt sync cache
+        env:
+          SYNC_CACHE_PASSPHRASE: ${{ secrets.STRAVA_CLIENT_SECRET }}
+        run: |
+          test -s run_page/data.db
+          openssl enc -aes-256-cbc -salt -pbkdf2 \
+            -in run_page/data.db \
+            -out run_page/data.db.enc \
+            -pass env:SYNC_CACHE_PASSPHRASE
+
+      - name: Save encrypted sync cache
+        uses: actions/cache/save@v6
         with:
-          name: strava-sync-data-db
-          path: run_page/data.db
-          if-no-files-found: ignore
-          retention-days: 14
+          path: run_page/data.db.enc
+          key: strava-data-encrypted-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Remove legacy raw sync storage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/artifacts?name=strava-sync-data-db&per_page=100" \
+            --jq '.artifacts[].id' |
+            while read -r artifact_id; do
+              if [ -n "$artifact_id" ]; then
+                gh api --method DELETE \
+                  "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id"
+              fi
+            done
+
+          gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/caches?per_page=100" \
+            --jq '.actions_caches[] | select((.key | startswith("strava-data-")) and (.key | contains("-encrypted-") | not)) | .id' |
+            while read -r cache_id; do
+              if [ -n "$cache_id" ]; then
+                gh api --method DELETE \
+                  "repos/$GITHUB_REPOSITORY/actions/caches/$cache_id"
+              fi
+            done
 
       - name: Commit updated running data
-        id: commit
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add src/static/activities.json
+          git add \
+            src/static/activities.json \
+            src/static/activity_routes.json \
+            src/static/event_routes.json
           if git diff --cached --quiet; then
             echo "No running data changes to commit."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "update Strava running data"
             git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Trigger GitHub Pages deployment
-        if: steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run gh-pages.yml --ref "$GITHUB_REF_NAME"
+        run: |
+          current_sha="$(git rev-parse HEAD)"
+          deployed_sha=""
+
+          for attempt in 1 2 3 4; do
+            if deployed_sha="$(
+              gh run list \
+                --workflow gh-pages.yml \
+                --status success \
+                --limit 1 \
+                --json headSha \
+                --jq '.[0].headSha // ""'
+            )"; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+          if [ "$deployed_sha" = "$current_sha" ]; then
+            echo "GitHub Pages already contains $current_sha."
+            exit 0
+          fi
+
+          for attempt in 1 2 3 4 5; do
+            if gh workflow run gh-pages.yml --ref "$GITHUB_REF_NAME"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done

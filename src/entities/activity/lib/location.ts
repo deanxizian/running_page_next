@@ -68,18 +68,16 @@ const locationForRun = (
       coordinate = extractCoordinate(location);
     }
 
-    const locationParts = location.split(',');
-    let countryMatch = locationParts[locationParts.length - 1].match(
-      /[\u4e00-\u9fa5].*[\u4e00-\u9fa5]/
-    );
-
-    if (!countryMatch && locationParts.length >= 3) {
-      countryMatch = locationParts[2].match(/[\u4e00-\u9fa5].*[\u4e00-\u9fa5]/);
-    }
-
-    if (countryMatch) {
-      [country] = countryMatch;
-    }
+    const locationParts = location.split(',').map((part) => part.trim());
+    country =
+      [...locationParts]
+        .reverse()
+        .find(
+          (part) =>
+            /\p{L}/u.test(part) &&
+            !/\d/.test(part) &&
+            !/latitude|longitude/i.test(part)
+        ) ?? '';
   }
 
   if (MUNICIPALITY_CITIES_ARR.includes(city)) {

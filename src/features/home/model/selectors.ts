@@ -217,8 +217,9 @@ const calendarFor = (
 const monthlyChartYearFor = (
   calendarMonth: string,
   latestMonth: string,
-  thisYear: string
-) => (calendarMonth || latestMonth || `${thisYear}-01`).slice(0, 4);
+  thisYear: string,
+  fallbackYear: string
+) => (calendarMonth || latestMonth || thisYear || fallbackYear).slice(0, 4);
 
 const monthlyBarsFor = (
   activityGroups: ActivityGroups,

@@ -26,6 +26,14 @@ class Base(DeclarativeBase):
 NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "running_page_next")
 g = Nominatim(user_agent=NOMINATIM_USER_AGENT)
 _geocode_cache = {}
+_geocode_requests_disabled = False
+
+_WEATHER_INPUT_FIELDS = (
+    "start_date_local",
+    "elapsed_time",
+    "moving_time",
+    "summary_polyline",
+)
 
 
 PUBLIC_ACTIVITY_KEYS = [
@@ -92,10 +100,19 @@ class Activity(Base):
         return out
 
 
-def resolve_location_country(run_activity, current_location=None, prefer_current=True):
+def reset_geocode_state():
+    global _geocode_requests_disabled
+
+    _geocode_cache.clear()
+    _geocode_requests_disabled = False
+
+
+def resolve_location_country(run_activity, current_location=None, force_refresh=False):
+    global _geocode_requests_disabled
+
     strava_location = getattr(run_activity, "location_country", "") or ""
     if (
-        prefer_current
+        not force_refresh
         and current_location
         and current_location != "China"
         and strava_location in ("", "China")
@@ -103,17 +120,21 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
         return current_location
 
     location_country = strava_location or current_location or ""
+    fallback_location = current_location or strava_location or ""
     start_point = getattr(run_activity, "start_latlng", None)
     should_reverse_geocode = start_point and (
-        not location_country or location_country == "China"
+        force_refresh or not location_country or location_country == "China"
     )
 
     if not should_reverse_geocode:
-        return location_country
+        return fallback_location if force_refresh else location_country
+
+    if _geocode_requests_disabled:
+        return fallback_location
 
     cache_key = (round(start_point.lat, 4), round(start_point.lon, 4))
     if cache_key in _geocode_cache:
-        return _geocode_cache[cache_key]
+        return _geocode_cache[cache_key] or fallback_location
 
     for attempt in range(2):
         try:
@@ -123,9 +144,9 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
                 language="zh-CN",
                 timeout=15,
             )
-            resolved_location = str(result) if result else location_country
+            resolved_location = str(result) if result else None
             _geocode_cache[cache_key] = resolved_location
-            return resolved_location
+            return resolved_location or fallback_location
         except Exception as exc:
             logger.warning(
                 "Reverse geocode failed for %s,%s on attempt %s: %s",
@@ -135,7 +156,10 @@ def resolve_location_country(run_activity, current_location=None, prefer_current
                 exc,
             )
 
-    return location_country
+    _geocode_cache[cache_key] = None
+    _geocode_requests_disabled = True
+    logger.warning("Reverse geocoding disabled for the remainder of this sync")
+    return fallback_location
 
 
 def _model_value(value):
@@ -217,17 +241,23 @@ def update_or_create_activity(session, run_activity, refresh_locations=False):
         created = True
     else:
         current_location = activity.location_country
+        weather_inputs_changed = any(
+            getattr(activity, field_name) != activity_fields[field_name]
+            for field_name in _WEATHER_INPUT_FIELDS
+        )
         if refresh_locations or not current_location or current_location == "China":
             location_country = resolve_location_country(
                 run_activity,
                 current_location,
-                prefer_current=not refresh_locations,
+                force_refresh=refresh_locations,
             )
         else:
             location_country = current_location
         activity.location_country = location_country
         for field_name, field_value in activity_fields.items():
             setattr(activity, field_name, field_value)
+        if weather_inputs_changed:
+            activity.weather_temperature = None
 
     return created
 
