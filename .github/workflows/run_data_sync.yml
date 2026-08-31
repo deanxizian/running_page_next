@@ -9,8 +9,11 @@ on:
         default: false
         type: boolean
   schedule:
-    # Normal daily sync at 00:00 Asia/Shanghai.
+    # Normal incremental sync at 00:00 Asia/Shanghai on days 2-31.
     - cron: '0 0 2-31 * *'
+      timezone: 'Asia/Shanghai'
+    # Normal incremental sync at 12:00 Asia/Shanghai every day.
+    - cron: '0 12 * * *'
       timezone: 'Asia/Shanghai'
     # Monthly sync with existing-location refresh on the 1st.
     - cron: '0 0 1 * *'
